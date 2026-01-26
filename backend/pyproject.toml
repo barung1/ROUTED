@@ -5,13 +5,19 @@ description = ""
 authors = [{ name = "Hemaang Sood", email = "hemaangsood@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = ["fastapi (>=0.128.0,<0.129.0)", "uvicorn (>=0.40.0,<0.41.0)"]
+dependencies = [
+	"fastapi (>=0.128.0,<0.129.0)",
+	"uvicorn (>=0.40.0,<0.41.0)",
+	"pytest (>=9.0.2,<10.0.0)",
+	"httpx (>=0.28.1,<0.29.0)",
+]
 
 [tool.poetry]
 packages = [{ include = "backend", from = "src" }]
 
 [tool.poetry.scripts]
 dev = "backend.run:dev"
+test = "pytest:main"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
