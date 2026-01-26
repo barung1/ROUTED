@@ -1,0 +1,12 @@
+ECE 651 - Foundations of Software Engineering
+
+“Routed” - A travel partner recommendation system
+
+ABSTRACT
+
+Many individuals nowadays plan their trips at random dates due to the increase in hybrid culture in their work and academic schedules. These people seek compatible companions for social interaction and making their trips enjoyable. Many online platforms don't account personal preferences which results in non-compatible matches for the users.
+
+Our project addresses this gap by providing closely relevant recommendations from users preferences and concrete trip details. 
+
+Our project is designed modularly with each section developed iteratively in an agile approach.  Key features include user login window, profile and trip management page, a recommendation tab which leverages user preferences, trip details, location and a consent-driven match- making.  Development follows backlog planning, task allotment to members in the team and sprint target deadlines in line with project milestones.
+Our project offers precise matching, enhanced privacy, and a streamlined user experience, distinguishing itself from other travel partner finder platforms by focusing on meaningful travel connections supported by structured trip data. The project will test the effectiveness of the matching algorithm, user satisfaction, and engagement, demonstrating improved discoverability of compatible travel companions and higher confidence in partner selection.
