@@ -34,7 +34,11 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 logger.info(f"Database engine created with URL: {DATABASE_URL}")
 
 def get_db_session() -> Generator[Session, None, None]:
-	"""Get database session for dependency injection in FastAPI endpoints."""
+	"""
+		!Not recommended for frequent use without proper handling!
+		!Better to use with engine.connect() as session for scoped sessions!
+		Get database session for dependency injection in FastAPI endpoints.
+	"""
 	session = SessionLocal()
 	try:
 		yield session
