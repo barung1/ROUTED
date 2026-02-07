@@ -9,5 +9,6 @@ class Location(Base):
 	name = Column(String, nullable=False)
 	latitude = Column(String, nullable=False)
 	longitude = Column(String, nullable=False)
-	tags = Relationship('Tag', secondary='location_tags', back_populates='locations')
+	tags = Relationship('Tag', secondary='location_tags',
+					  back_populates='locations')
 	description = Column(String, nullable=True)
