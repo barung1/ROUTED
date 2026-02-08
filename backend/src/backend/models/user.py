@@ -29,7 +29,7 @@ class User(Base):
 	trips: Mapped[list["Trip"]] = relationship(
 		"Trip",
 		secondary=user_trips,
-		back_populates="users",
+		back_populates="user",
 	)
 
 

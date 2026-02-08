@@ -6,9 +6,10 @@ from geoalchemy2 import Geography
 from sqlalchemy import String, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from backend.models.tag import Tag
+from backend.models.trip import Trip
 
-if TYPE_CHECKING:
-	from backend.models.tag import Tag
+	
 
 class Location(Base):
 	__tablename__ = 'locations'
@@ -28,5 +29,9 @@ class Location(Base):
 		"Tag",
 		secondary=location_tags,
 		back_populates="locations",
+	)
+	trips_location: Mapped[list["Trip"]] = relationship(
+		"Trip",
+		back_populates="location",
 	)
 	description: Mapped[str] = mapped_column(nullable=True)

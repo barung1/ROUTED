@@ -30,7 +30,6 @@ class Trip(Base):
 		back_populates="trips",
 		uselist=False,
 	)
-	destination:Mapped[Location] = relationship(cascade="all, delete",back_populates="trips_destination")
 	start_date:Mapped[str] = mapped_column(nullable=False)
 	end_date:Mapped[str] = mapped_column(nullable=False)
 	status:Mapped[TripStatus] = mapped_column(nullable=False,default=TripStatus.PLANNED)
