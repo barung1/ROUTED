@@ -38,7 +38,7 @@ logger.info(f"Database engine created with URL: {DATABASE_URL}")
 
 def _load_models() -> None:
 	"""Import models so SQLAlchemy registers them with Base metadata."""
-	from backend.models import location, tag, trip, users  # noqa: F401
+	from backend.models import location, tag, trip, user  # noqa: F401
 
 
 def _ensure_postgis_extension() -> None:
