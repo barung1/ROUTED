@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from backend.config.db import get_db_session
 from backend.main import app
 from backend.models.user import User
+from backend.routes.user.user import _hash_password
 
 
 class _ScalarResult:
@@ -74,7 +75,7 @@ def test_register_user_success(client):
 	payload = {
 		"username": "tester",
 		"email": "tester@example.com",
-		"password": "secret",
+		"password": "Secret1!",
 		"firstName": "Test",
 		"lastName": "User",
 	}
@@ -106,7 +107,7 @@ def test_register_user_duplicate_short_circuit(client):
 	payload = {
 		"username": "tester",
 		"email": "tester@example.com",
-		"password": "secret",
+		"password": "Secret1!",
 		"firstName": "Test",
 		"lastName": "User",
 	}
@@ -126,7 +127,7 @@ def test_register_user_duplicate_on_commit(client):
 	payload = {
 		"username": "tester",
 		"email": "tester@example.com",
-		"password": "secret",
+		"password": "Secret1!",
 		"firstName": "Test",
 		"lastName": "User",
 	}
@@ -223,3 +224,120 @@ def test_delete_user_commit_failure(client):
 	assert response.status_code == 500
 	assert response.json()["detail"] == "Failed to delete user"
 	assert fake_session.rolled_back is True
+
+
+def test_login_user_with_username_success(client):
+	existing_user = User(
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	payload = {
+		"usernameOrEmail": "tester",
+		"password": "Secret1!",
+	}
+	response = client.post("/users/login", json=payload)
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 200
+	body = response.json()
+	assert body["username"] == existing_user.username
+	assert body["email"] == existing_user.email
+	assert body["firstName"] == existing_user.first_name
+	assert body["lastName"] == existing_user.last_name
+
+
+def test_login_user_with_email_success(client):
+	existing_user = User(
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	payload = {
+		"usernameOrEmail": "tester@example.com",
+		"password": "Secret1!",
+	}
+	response = client.post("/users/login", json=payload)
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 200
+	body = response.json()
+	assert body["username"] == existing_user.username
+	assert body["email"] == existing_user.email
+	assert body["firstName"] == existing_user.first_name
+	assert body["lastName"] == existing_user.last_name
+
+
+def test_login_user_not_found(client):
+	fake_session = FakeSession(existing_user=None)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	payload = {
+		"usernameOrEmail": "missing",
+		"password": "Secret1!",
+	}
+	response = client.post("/users/login", json=payload)
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 401
+	assert response.json()["detail"] == "Invalid username or email"
+
+
+def test_login_user_invalid_password(client):
+	existing_user = User(
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	payload = {
+		"usernameOrEmail": "tester",
+		"password": "Wrong1!",
+	}
+	response = client.post("/users/login", json=payload)
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 401
+	assert response.json()["detail"] == "Invalid username or password"
+
+
+def test_login_user_missing_username_or_email(client):
+	payload = {
+		"password": "Secret1!",
+	}
+	response = client.post("/users/login", json=payload)
+
+	assert response.status_code == 422
+	assert any(
+		item["loc"] == ["body", "usernameOrEmail"]
+		and item["type"] == "missing"
+		for item in response.json().get("detail", [])
+	)
+
+
+def test_login_user_missing_password(client):
+	payload = {
+		"usernameOrEmail": "tester",
+	}
+	response = client.post("/users/login", json=payload)
+
+	assert response.status_code == 422
+	assert any(
+		item["loc"] == ["body", "password"]
+		and item["type"] == "missing"
+		for item in response.json().get("detail", [])
+	)
