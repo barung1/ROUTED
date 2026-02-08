@@ -227,7 +227,9 @@ def test_delete_user_commit_failure(client):
 
 
 def test_login_user_with_username_success(client):
+	user_id = uuid4()
 	existing_user = User(
+		id=user_id,
 		username="tester",
 		email="tester@example.com",
 		first_name="Test",
@@ -253,7 +255,9 @@ def test_login_user_with_username_success(client):
 
 
 def test_login_user_with_email_success(client):
+	user_id = uuid4()
 	existing_user = User(
+		id=user_id,
 		username="tester",
 		email="tester@example.com",
 		first_name="Test",
@@ -294,7 +298,9 @@ def test_login_user_not_found(client):
 
 
 def test_login_user_invalid_password(client):
+	user_id = uuid4()
 	existing_user = User(
+		id=user_id,
 		username="tester",
 		email="tester@example.com",
 		first_name="Test",
