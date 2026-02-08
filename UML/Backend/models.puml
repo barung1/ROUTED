@@ -16,11 +16,12 @@ class User {
 
 class Trip {
   +id: Integer
-  +user_id: Integer
   +destination: Location
+  +location: Location
   +start_date: String
   +end_date: String
   +status: TripStatus
+  +location_id: Integer
 }
 
 enum TripStatus {
@@ -32,8 +33,7 @@ enum TripStatus {
 class Location {
   +id: Integer
   +name: String
-  +latitude: String
-  +longitude: String
+  +position: Geography(POINT)
   +description: String
 }
 
@@ -45,7 +45,8 @@ class Tag {
 }
 
 Location "0..*" -- "0..*" Tag : location_tags
-User "1" --> "0..*" Trip : user_id
+User "1" -- "0..*" Trip : user_trips
+Trip "0..*" --> "1" Location : location_id
 Trip "0..*" --> "1" Location : destination
 Trip --> TripStatus : status
 @enduml
