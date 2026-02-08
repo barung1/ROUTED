@@ -1,23 +1,16 @@
 from logging import Logger
 from typing import Generator
+from backend.config.env_vars import load_env_variables
 import sqlalchemy
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker, Session
 import os
-import pathlib
-import dotenv
 from backend.loggers.logger import get_logger # type: ignore
 from backend.models.Base import Base
 
 logger: Logger = get_logger(__name__) 
 
-env_file_path = os.path.join(pathlib.Path(__file__).parent.parent.parent.parent.parent, 'env', '.env')
-loaded_env = dotenv.load_dotenv(env_file_path)
-
-if not loaded_env:
-	logger.warning(f"Could not load .env file from {env_file_path} when in context:{os.getcwd()}")
-else:
-	logger.info(f".env file loaded successfully from {env_file_path}")
+loaded_env = load_env_variables()
 
 # Database URL from environment or construct from individual vars
 DATABASE_URL = sqlalchemy.engine.URL.create(
@@ -63,6 +56,10 @@ def get_db_session() -> Generator[Session, None, None]:
 		raise
 	finally:
 		session.close()
+
+
+# Ensure models are registered for relationships (even when not resetting DB).
+_load_models()
 
 if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
 	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")

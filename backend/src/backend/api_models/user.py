@@ -16,3 +16,8 @@ class UserPublicModel(BaseModel):
 	email: EmailStr
 	firstName: str | None = None
 	lastName: str | None = None
+
+
+class LoginUserModel(BaseModel):
+	usernameOrEmail: str|EmailStr
+	password: str
