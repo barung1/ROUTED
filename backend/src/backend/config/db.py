@@ -41,10 +41,11 @@ def _load_models() -> None:
 	from backend.models import location, tag, trip, user  # noqa: F401
 
 
-def _ensure_postgis_extension() -> None:
+def _ensure_postgres_dependencies() -> None:
 	"""Ensure PostGIS is enabled for geography types."""
 	with engine.connect() as connection:
 		connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+		connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
 		connection.commit()
 
 def get_db_session() -> Generator[Session, None, None]:
@@ -66,7 +67,7 @@ def get_db_session() -> Generator[Session, None, None]:
 if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
 	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
 	_load_models()
-	_ensure_postgis_extension()
+	_ensure_postgres_dependencies()
 	Base.metadata.drop_all(bind=engine)
 	Base.metadata.create_all(bind=engine)
 	logger.info("Database tables created successfully")
