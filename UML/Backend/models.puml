@@ -6,7 +6,7 @@ skinparam ranksep 60
 left to right direction
 
 class User {
-  +id: Integer
+  +id: UUID
   +username: String
   +email: String
   +first_name: String
@@ -15,13 +15,12 @@ class User {
 }
 
 class Trip {
-  +id: Integer
-  +destination: Location
+  +id: UUID
   +location: Location
   +start_date: String
   +end_date: String
   +status: TripStatus
-  +location_id: Integer
+  +location_id: UUID
 }
 
 enum TripStatus {
@@ -31,14 +30,14 @@ enum TripStatus {
 }
 
 class Location {
-  +id: Integer
+  +id: UUID
   +name: String
   +position: Geography(POINT)
   +description: String
 }
 
 class Tag {
-  +id: Integer
+  +id: UUID
   +name: String
   +description: String
   +color: String
@@ -47,6 +46,5 @@ class Tag {
 Location "0..*" -- "0..*" Tag : location_tags
 User "1" -- "0..*" Trip : user_trips
 Trip "0..*" --> "1" Location : location_id
-Trip "0..*" --> "1" Location : destination
 Trip --> TripStatus : status
 @enduml
