@@ -1,11 +1,13 @@
 from logging import Logger
 from typing import Generator
 import sqlalchemy
+from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker, Session
 import os
 import pathlib
 import dotenv
 from backend.loggers.logger import get_logger # type: ignore
+from backend.models.Base import Base
 
 logger: Logger = get_logger(__name__) 
 
@@ -33,13 +35,25 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 logger.info(f"Database engine created with URL: {DATABASE_URL}")
 
+
+def _load_models() -> None:
+	"""Import models so SQLAlchemy registers them with Base metadata."""
+	from backend.models import location, tag, trip, users  # noqa: F401
+
+
+def _ensure_postgis_extension() -> None:
+	"""Ensure PostGIS is enabled for geography types."""
+	with engine.connect() as connection:
+		connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+		connection.commit()
+
 def get_db_session() -> Generator[Session, None, None]:
 	"""
 		!Not recommended for frequent use without proper handling!
 		!Better to use with engine.connect() as session for scoped sessions!
 		Get database session for dependency injection in FastAPI endpoints.
 	"""
-	session = SessionLocal()
+	session = SessionLocal() 
 	try:
 		yield session
 	except Exception as e:
@@ -48,3 +62,11 @@ def get_db_session() -> Generator[Session, None, None]:
 		raise
 	finally:
 		session.close()
+
+if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
+	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
+	_load_models()
+	_ensure_postgis_extension()
+	Base.metadata.drop_all(bind=engine)
+	Base.metadata.create_all(bind=engine)
+	logger.info("Database tables created successfully")
