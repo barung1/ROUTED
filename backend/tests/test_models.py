@@ -6,7 +6,7 @@ from backend.models import associations  # noqa: F401
 from backend.models import location  # noqa: F401
 from backend.models import tag  # noqa: F401
 from backend.models import trip  # noqa: F401
-from backend.models import users  # noqa: F401
+from backend.models import user  # noqa: F401
 
 
 def test_users_table_columns():
