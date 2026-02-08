@@ -7,7 +7,10 @@ from sqlalchemy import String, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.models.tag import Tag
-from backend.models.trip import Trip
+
+if TYPE_CHECKING:
+	# Avoid runtime circular import; SQLAlchemy resolves relationships by string.
+	from backend.models.trip import Trip
 
 	
 

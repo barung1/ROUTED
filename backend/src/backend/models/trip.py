@@ -3,11 +3,14 @@ from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 from backend.models.Base import Base
 from backend.models.associations import user_trips
-from backend.models.location import Location
 from sqlalchemy import String, ForeignKey, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import relationship, mapped_column, Mapped
 from backend.models.user import User
+
+if TYPE_CHECKING:
+	# Avoid runtime circular import; SQLAlchemy resolves relationships by string.
+	from backend.models.location import Location
 
 class TripStatus(enum.Enum):
 	PLANNED = "planned"
