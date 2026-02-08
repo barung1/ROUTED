@@ -1,7 +1,7 @@
 # User model definition
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
-from sqlalchemy import String
+from sqlalchemy import String, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 from backend.models.Base import Base
@@ -19,6 +19,7 @@ class User(Base):
 		primary_key=True,
 		index=True,
 		default=uuid4,
+		server_default=text("gen_random_uuid()"),
 	)
 	username: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
 	email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)

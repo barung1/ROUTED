@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 from backend.models.Base import Base
 from backend.models.associations import location_tags
 from geoalchemy2 import Geography
-from sqlalchemy import String
+from sqlalchemy import String, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -18,6 +18,7 @@ class Location(Base):
 		primary_key=True,
 		index=True,
 		default=uuid4,
+		server_default=text("gen_random_uuid()"),
 	)
 	name: Mapped[str] = mapped_column(nullable=False)
 	position: Mapped[str] = mapped_column(
