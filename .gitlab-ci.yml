@@ -1,0 +1,31 @@
+stages:
+  - test
+
+variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+  POETRY_VIRTUALENVS_CREATE: 'false'
+  POSTGRES_USER: routed_user
+  POSTGRES_PASSWORD: routed_password
+  POSTGRES_DB: routed_test
+  POSTGRES_HOST: postgres
+  POSTGRES_PORT: '5432'
+  RESET_DB_ON_STARTUP: 'false'
+
+backend-tests:
+  stage: test
+  image: python:3.14-slim
+  services:
+    - name: postgres:16
+      alias: postgres
+  cache:
+    key: poetry-${CI_COMMIT_REF_SLUG}
+    paths:
+      - .cache/pip
+      - .cache/pypoetry
+  before_script:
+    - python -m pip install --upgrade pip
+    - python -m pip install poetry
+  script:
+    - cd backend
+    - poetry install
+    - poetry run pytest
