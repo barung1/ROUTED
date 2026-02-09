@@ -60,11 +60,10 @@ def get_db_session() -> Generator[Session, None, None]:
 
 # Ensure models are registered for relationships (even when not resetting DB).
 _load_models()
+_ensure_postgres_dependencies()
 
 if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
 	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
-	_load_models()
-	_ensure_postgres_dependencies()
 	Base.metadata.drop_all(bind=engine)
 	Base.metadata.create_all(bind=engine)
 	logger.info("Database tables created successfully")

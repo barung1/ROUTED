@@ -15,7 +15,7 @@ backend-tests:
   stage: test
   image: python:3.14-slim
   services:
-    - name: postgres:16
+    - name: postgis/postgis:16-3.4
       alias: postgres
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
