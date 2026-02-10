@@ -23,9 +23,12 @@ backend-tests:
       - .cache/pip
       - .cache/pypoetry
   before_script:
+    - apt-get update
+    - apt-get install -y postgresql-client
     - python -m pip install --upgrade pip
     - python -m pip install poetry
   script:
     - cd backend
     - poetry install --no-interaction --no-ansi
-    - poetry run pytest -q -maxfail=2
+    - until pg_isready -h postgres -p 5432; do sleep 0.5; done
+    - poetry run pytest -q --maxfail=2
