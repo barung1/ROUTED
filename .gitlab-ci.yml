@@ -27,5 +27,5 @@ backend-tests:
     - python -m pip install poetry
   script:
     - cd backend
-    - poetry install
-    - poetry run pytest
+    - poetry install --no-interaction --no-ansi
+    - poetry run pytest -q -maxfail=2
