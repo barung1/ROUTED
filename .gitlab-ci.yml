@@ -13,7 +13,7 @@ variables:
 
 backend-tests:
   stage: test
-  image: python:3.14-slim
+  image: git.uwaterloo.ca:5050/h3sood/routed/routed-backend:latest
   services:
     - name: postgis/postgis:16-3.4
       alias: postgres
@@ -22,11 +22,6 @@ backend-tests:
     paths:
       - .cache/pip
       - .cache/pypoetry
-  before_script:
-    - apt-get update
-    - apt-get install -y postgresql-client
-    - python -m pip install --upgrade pip
-    - python -m pip install poetry
   script:
     - cd backend
     - poetry install --no-interaction --no-ansi
