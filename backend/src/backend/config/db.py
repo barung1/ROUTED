@@ -62,6 +62,21 @@ def get_db_session() -> Generator[Session, None, None]:
 _load_models()
 _ensure_postgres_dependencies()
 
+# Ensure tables exist in all environments and log status.
+inspector = sqlalchemy.inspect(engine)
+expected_tables = set(Base.metadata.tables.keys())
+existing_tables = set(inspector.get_table_names())
+missing_tables = expected_tables - existing_tables
+Base.metadata.create_all(bind=engine)
+
+if missing_tables:
+	logger.info(
+		"Database tables created on startup: %s",
+		", ".join(sorted(missing_tables)),
+	)
+else:
+	logger.info("Database tables already existed on startup")
+
 if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
 	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
 	Base.metadata.drop_all(bind=engine)
