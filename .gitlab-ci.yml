@@ -1,4 +1,5 @@
 stages:
+  - build
   - test
 
 variables:
@@ -10,16 +11,43 @@ variables:
   POSTGRES_HOST: postgres
   POSTGRES_PORT: '5432'
   RESET_DB_ON_STARTUP: 'false'
+  REGISTRY_URL: "git.uwaterloo.ca:5050"
+  BACKEND_IMAGE: "$REGISTRY_URL/h3sood/routed/routed-backend:latest"
+  BACKEND_IMAGE_SHA: "$REGISTRY_URL/h3sood/routed/routed-backend:$CI_COMMIT_SHA"
+
+backend-image:
+  stage: build
+  image: docker:24
+  services:
+    - name: docker:24-dind
+      alias: docker
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: tcp://docker:2375
+  rules:
+    - changes:
+        - backend/Dockerfile
+        - backend/pyproject.toml
+        - backend/poetry.lock
+        - .gitlab-ci.yml
+    - when: never
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$REGISTRY_URL"
+    - docker build -t "$BACKEND_IMAGE" -t "$BACKEND_IMAGE_SHA" -f backend/Dockerfile backend
+    - docker push "$BACKEND_IMAGE"
+    - docker push "$BACKEND_IMAGE_SHA"
 
 backend-tests:
   stage: test
-  image: git.uwaterloo.ca:5050/h3sood/routed/routed-backend:latest
+  image:
+    name: $BACKEND_IMAGE
+    pull_policy: always
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
-         - backend/**/*
+        - backend/**/*
     - changes:
-      - .gitlab-ci.yml
+        - .gitlab-ci.yml
   services:
     - name: postgis/postgis:latest
       alias: postgres
@@ -35,14 +63,15 @@ backend-tests:
       - .cache/pypoetry
   script:
     - cd backend
-    - poetry install --no-interaction --no-ansi
     - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
     - pg_isready -h postgres -p 5432
-    - poetry run pytest -q --maxfail=2
+    - PYTHONPATH=src pytest -q --maxfail=2
 
 model_tests:
   stage: test
-  image: git.uwaterloo.ca:5050/h3sood/routed/routed-backend:latest
+  image:
+    name: $BACKEND_IMAGE
+    pull_policy: always
   rules:
     - changes:
         - backend/model/**
@@ -55,12 +84,13 @@ model_tests:
       - .cache/pypoetry
   script:
     - cd backend
-    - poetry install --no-interaction --no-ansi
-    - poetry run pytest -q --maxfail=2 #Run all tests as changes to model files can affect multiple test files, so we run all tests instead of just model tests
+    - PYTHONPATH=src pytest -q --maxfail=2 #Run all tests as changes to model files can affect multiple test files, so we run all tests instead of just model tests
 
 userRoutes-tests:
   stage: test
-  image: git.uwaterloo.ca:5050/h3sood/routed/routed-backend:latest
+  image:
+    name: $BACKEND_IMAGE
+    pull_policy: always
   rules:
     - changes:
         - backend/userRoutes/**
@@ -73,6 +103,5 @@ userRoutes-tests:
       - .cache/pypoetry
   script:
     - cd backend/tests
-    - poetry install --no-interaction --no-ansi
-    - poetry run pytest test_user_routes.py test_jwt_auth.py -q --maxfail=2
+    - PYTHONPATH=../src pytest test_user_routes.py test_jwt_auth.py -q --maxfail=2
 
