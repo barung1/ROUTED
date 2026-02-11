@@ -14,6 +14,11 @@ variables:
 backend-tests:
   stage: test
   image: git.uwaterloo.ca:5050/h3sood/routed/routed-backend:latest
+  rules:
+    - changes:
+        - backend/**/*
+        - .gitlab-ci.yml
+    - when: never
   services:
     - name: postgis/postgis:latest
       alias: postgres
