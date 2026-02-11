@@ -3,12 +3,28 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
-from backend.main import app
 from backend.auth.jwt import create_access_token, verify_access_token
+from backend.config.db import SessionLocal
+from backend.main import app
+from backend.models.user import User
 
 
 client = TestClient(app)
+
+
+def _delete_user(username: str, email: str) -> None:
+	session = SessionLocal()
+	try:
+		user = session.execute(
+			select(User).where((User.username == username) | (User.email == email))
+		).scalars().first()
+		if user:
+			session.delete(user)
+			session.commit()
+	finally:
+		session.close()
 
 
 class TestJWTAuth:
@@ -50,22 +66,25 @@ class TestJWTAuth:
 			"firstName": "JWT",
 			"lastName": "User"
 		}
-		register_response = client.post("/users/register", json=registration_data)
-		assert register_response.status_code == 201
-		
-		# Now login
-		login_data = {
-			"usernameOrEmail": registration_data["username"],
-			"password": "SecurePass123!"
-		}
-		login_response = client.post("/users/login", json=login_data)
-		assert login_response.status_code == 200
-		
-		response_data = login_response.json()
-		assert "access_token" in response_data
-		assert response_data["token_type"] == "bearer"
-		assert "user" in response_data
-		assert response_data["user"]["username"] == registration_data["username"]
+		try:
+			register_response = client.post("/users/register", json=registration_data)
+			assert register_response.status_code == 201
+			
+			# Now login
+			login_data = {
+				"usernameOrEmail": registration_data["username"],
+				"password": "SecurePass123!"
+			}
+			login_response = client.post("/users/login", json=login_data)
+			assert login_response.status_code == 200
+			
+			response_data = login_response.json()
+			assert "access_token" in response_data
+			assert response_data["token_type"] == "bearer"
+			assert "user" in response_data
+			assert response_data["user"]["username"] == registration_data["username"]
+		finally:
+			_delete_user(registration_data["username"], registration_data["email"])
 	
 	def test_login_with_email_returns_token(self):
 		"""Test that login with email endpoint returns a token"""
@@ -78,17 +97,20 @@ class TestJWTAuth:
 			"firstName": "Email",
 			"lastName": "User"
 		}
-		register_response = client.post("/users/register", json=registration_data)
-		assert register_response.status_code == 201
-		
-		# Now login with email
-		login_data = {
-			"usernameOrEmail": registration_data["email"],
-			"password": "SecurePass123!"
-		}
-		login_response = client.post("/users/login", json=login_data)
-		assert login_response.status_code == 200
-		
-		response_data = login_response.json()
-		assert "access_token" in response_data
-		assert response_data["token_type"] == "bearer"
+		try:
+			register_response = client.post("/users/register", json=registration_data)
+			assert register_response.status_code == 201
+			
+			# Now login with email
+			login_data = {
+				"usernameOrEmail": registration_data["email"],
+				"password": "SecurePass123!"
+			}
+			login_response = client.post("/users/login", json=login_data)
+			assert login_response.status_code == 200
+			
+			response_data = login_response.json()
+			assert "access_token" in response_data
+			assert response_data["token_type"] == "bearer"
+		finally:
+			_delete_user(registration_data["username"], registration_data["email"])
