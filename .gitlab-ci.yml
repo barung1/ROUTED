@@ -32,7 +32,6 @@ backend-image:
         - .gitlab-ci.yml
     - when: never
   script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$REGISTRY_URL"
     - docker build -t "$BACKEND_IMAGE" -t "$BACKEND_IMAGE_SHA" -f backend/Dockerfile backend
     - docker push "$BACKEND_IMAGE"
     - docker push "$BACKEND_IMAGE_SHA"
