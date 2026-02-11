@@ -45,7 +45,7 @@ model_tests:
   image: git.uwaterloo.ca:5050/h3sood/routed/routed-backend:latest
   rules:
     - changes:
-        - backend/model/**/*
+        - backend/model/**
         - .gitlab-ci.yml
     - when: never
   cache:
@@ -63,7 +63,7 @@ userRoutes-tests:
   image: git.uwaterloo.ca:5050/h3sood/routed/routed-backend:latest
   rules:
     - changes:
-        - backend/userRoutes/**/*
+        - backend/userRoutes/**
         - .gitlab-ci.yml
     - when: never
   cache:
