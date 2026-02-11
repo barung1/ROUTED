@@ -20,6 +20,7 @@ backend-image:
   services:
     - name: docker:24-dind
       alias: docker
+      pull_policy: if-not-present
   variables:
     DOCKER_TLS_CERTDIR: ""
     DOCKER_HOST: tcp://docker:2375
