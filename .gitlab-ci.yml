@@ -13,7 +13,6 @@ variables:
   RESET_DB_ON_STARTUP: 'false'
   REGISTRY_URL: "git.uwaterloo.ca:5050"
   BACKEND_IMAGE: "$REGISTRY_URL/h3sood/routed/routed-backend:latest"
-  BACKEND_IMAGE_SHA: "$REGISTRY_URL/h3sood/routed/routed-backend:$CI_COMMIT_SHA"
 
 backend-image:
   stage: build
@@ -33,15 +32,20 @@ backend-image:
     - when: never
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$REGISTRY_URL"
-    - docker build -t "$BACKEND_IMAGE" -t "$BACKEND_IMAGE_SHA" -f backend/Dockerfile backend
+    - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
+    - BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
+    - docker build -t "$BACKEND_IMAGE" -t "$BACKEND_IMAGE_HASH" -f backend/Dockerfile backend
     - docker push "$BACKEND_IMAGE"
-    - docker push "$BACKEND_IMAGE_SHA"
+    - docker push "$BACKEND_IMAGE_HASH"
 
 backend-tests:
   stage: test
+  before_script:
+    - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
+    - export BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
   image:
-    name: $BACKEND_IMAGE
-    pull_policy: always
+    name: $BACKEND_IMAGE_HASH
+    pull_policy: if-not-present
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
@@ -69,9 +73,12 @@ backend-tests:
 
 model_tests:
   stage: test
+  before_script:
+    - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
+    - export BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
   image:
-    name: $BACKEND_IMAGE
-    pull_policy: always
+    name: $BACKEND_IMAGE_HASH
+    pull_policy: if-not-present
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
@@ -91,9 +98,12 @@ model_tests:
 
 userRoutes-tests:
   stage: test
+  before_script:
+    - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
+    - export BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
   image:
-    name: $BACKEND_IMAGE
-    pull_policy: always
+    name: $BACKEND_IMAGE_HASH
+    pull_policy: if-not-present
   rules:
     - changes:
         - backend/userRoutes/**
