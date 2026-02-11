@@ -72,9 +72,12 @@ model_tests:
     name: $BACKEND_IMAGE
     pull_policy: always
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - backend/**/*
+      when: never
     - changes:
-        - backend/model/**
-        - .gitlab-ci.yml
+        - backend/models/**
     - when: never
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
