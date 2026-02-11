@@ -379,3 +379,234 @@ def test_login_user_missing_password(client):
 		and item["type"] == "missing"
 		for item in response.json().get("detail", [])
 	)
+
+
+def test_update_user_email_success(client):
+	user_id = uuid4()
+	existing_user = User(
+		id=user_id,
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	# Create a JWT token
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+
+	payload = {
+		"email": "newemail@example.com",
+	}
+	response = client.put("/users/me", json=payload, headers={"Authorization": f"Bearer {token}"})
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 200
+	body = response.json()
+	assert body["email"] == "newemail@example.com"
+	assert body["username"] == "tester"
+	assert body["firstName"] == "Test"
+	assert body["lastName"] == "User"
+	assert fake_session.committed is True
+
+
+def test_update_user_password_success(client):
+	user_id = uuid4()
+	existing_user = User(
+		id=user_id,
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	# Create a JWT token
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+
+	payload = {
+		"password": "NewSecret2@",
+	}
+	response = client.put("/users/me", json=payload, headers={"Authorization": f"Bearer {token}"})
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 200
+	body = response.json()
+	assert body["username"] == "tester"
+	assert fake_session.committed is True
+
+
+def test_update_user_name_success(client):
+	user_id = uuid4()
+	existing_user = User(
+		id=user_id,
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	# Create a JWT token
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+
+	payload = {
+		"firstName": "Updated",
+		"lastName": "Name",
+	}
+	response = client.put("/users/me", json=payload, headers={"Authorization": f"Bearer {token}"})
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 200
+	body = response.json()
+	assert body["firstName"] == "Updated"
+	assert body["lastName"] == "Name"
+	assert body["username"] == "tester"
+	assert fake_session.committed is True
+
+
+def test_update_user_multiple_fields_success(client):
+	user_id = uuid4()
+	existing_user = User(
+		id=user_id,
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	# Create a JWT token
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+
+	payload = {
+		"email": "newemail@example.com",
+		"firstName": "John",
+		"lastName": "Doe",
+		"password": "NewSecret2@",
+	}
+	response = client.put("/users/me", json=payload, headers={"Authorization": f"Bearer {token}"})
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 200
+	body = response.json()
+	assert body["email"] == "newemail@example.com"
+	assert body["firstName"] == "John"
+	assert body["lastName"] == "Doe"
+	assert body["username"] == "tester"
+	assert fake_session.committed is True
+
+
+def test_update_user_invalid_password(client):
+	user_id = uuid4()
+	existing_user = User(
+		id=user_id,
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	# Create a JWT token
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+
+	payload = {
+		"password": "weak",  # Too short, missing requirements
+	}
+	response = client.put("/users/me", json=payload, headers={"Authorization": f"Bearer {token}"})
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 400
+	assert "Password must be at least 8 characters" in response.json()["detail"]
+	assert fake_session.committed is False
+
+
+def test_update_user_not_found(client):
+	user_id = uuid4()
+	fake_session = FakeSession(existing_user=None)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	# Create a JWT token
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+
+	payload = {
+		"email": "newemail@example.com",
+	}
+	response = client.put("/users/me", json=payload, headers={"Authorization": f"Bearer {token}"})
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 404
+	assert response.json()["detail"] == "User not found"
+
+
+def test_update_user_commit_failure(client):
+	user_id = uuid4()
+	existing_user = User(
+		id=user_id,
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user, commit_exc=Exception("fail"))
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	# Create a JWT token
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+
+	payload = {
+		"email": "newemail@example.com",
+	}
+	response = client.put("/users/me", json=payload, headers={"Authorization": f"Bearer {token}"})
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 500
+	assert response.json()["detail"] == "Failed to retrieve user for update"
+	assert fake_session.rolled_back is True
+
+
+def test_update_user_unauthorized_no_token(client):
+	"""Test that update endpoint requires a valid JWT token"""
+	fake_session = FakeSession()
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	payload = {
+		"email": "newemail@example.com",
+	}
+	response = client.put("/users/me", json=payload)
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 401

@@ -12,7 +12,7 @@ import secrets
 from datetime import timedelta
 
 from backend.config.db import get_db_session
-from backend.api_models.user import LoginUserModel, RegistrationUserModel, UserPublicModel, LoginResponseModel
+from backend.api_models.user import LoginUserModel, RegistrationUserModel, UpdateUserModel, UserPublicModel, LoginResponseModel
 from backend.models.user import User
 from backend.loggers.logger import get_logger # type: ignore
 from backend.auth.jwt import create_access_token, get_current_user_id
@@ -140,10 +140,9 @@ def get_user_by_id(user_id: UUID, db: Session = Depends(get_db_session)) -> User
 	)
 
 @router.delete("/me")
-def delete_current_user(user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db_session)) -> None:
+def delete_current_user(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db_session)) -> None:
 	try:
-		user_uuid = UUID(user_id)
-		user = db.execute(select(User).where(User.id == user_uuid)).scalars().first()
+		user = db.execute(select(User).where(User.id == user_id)).scalars().first()
 		if not user:
 			raise HTTPException(
 				status_code=status.HTTP_404_NOT_FOUND,
@@ -165,6 +164,48 @@ def delete_current_user(user_id: str = Depends(get_current_user_id), db: Session
 			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
 			detail="Failed to delete user",
 		)
+
+@router.put("/me")
+def update_user(update: UpdateUserModel, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db_session)) -> UserPublicModel:
+	try:
+		user = db.execute(select(User).where(User.id == user_id)).scalars().first()
+		if not user:
+			raise HTTPException(
+				status_code=status.HTTP_404_NOT_FOUND,
+				detail="User not found",
+			)
+		if update.email is not None:
+			user.email = update.email
+		if update.password is not None:
+			if not _valid_password(update.password):
+				raise HTTPException(
+					status_code=status.HTTP_400_BAD_REQUEST,
+					detail="Password must be at least 8 characters long and include uppercase, lowercase, digit, and special character",
+				)
+			user.hashed_password = _hash_password(update.password)
+		if update.firstName is not None:
+			user.first_name = update.firstName
+		if update.lastName is not None:
+			user.last_name = update.lastName
+		db.commit()
+		db.refresh(user)
+		return UserPublicModel(
+			id=user.id,
+			username=user.username,
+			email=user.email,
+			firstName=user.first_name,
+			lastName=user.last_name,
+		)
+	except HTTPException:
+		raise
+	except Exception as e:
+		db.rollback()
+		logger.error(f"Failed to Update user: {user_id} for update: {e}")
+		raise HTTPException(
+			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			detail="Failed to retrieve user for update",
+		)
+	
 
 @router.post("/login", response_model=LoginResponseModel)
 def login_user(credentials: LoginUserModel, db: Session = Depends(get_db_session)) -> LoginResponseModel:

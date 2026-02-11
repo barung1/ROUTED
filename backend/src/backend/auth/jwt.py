@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from uuid import UUID
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -60,7 +61,7 @@ def verify_access_token(token: str) -> dict:
 		)
 
 
-def get_current_user_id(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> str:
+def get_current_user_id(credentials: HTTPAuthorizationCredentials | None = Depends(security)) -> UUID:
 	"""
 	Dependency to extract and verify the current user ID from JWT Bearer token.
 	
@@ -89,4 +90,4 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials | None = Depen
 			detail="Invalid token: missing user ID",
 			headers={"WWW-Authenticate": "Bearer"},
 		)
-	return user_id
+	return UUID(user_id)
