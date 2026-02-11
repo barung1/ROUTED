@@ -14,7 +14,7 @@ from backend.models.user import User
 client = TestClient(app)
 
 
-def _delete_user(username: str, email: str) -> None:
+def _delete_user(username: str = "", email: str = "") -> None:
 	session = SessionLocal()
 	try:
 		user = session.execute(
