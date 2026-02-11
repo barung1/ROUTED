@@ -1,21 +1,16 @@
 from logging import Logger
 from typing import Generator
+from backend.config.env_vars import load_env_variables
 import sqlalchemy
+from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker, Session
 import os
-import pathlib
-import dotenv
 from backend.loggers.logger import get_logger # type: ignore
+from backend.models.Base import Base
 
 logger: Logger = get_logger(__name__) 
 
-env_file_path = os.path.join(pathlib.Path(__file__).parent.parent.parent.parent.parent, 'env', '.env')
-loaded_env = dotenv.load_dotenv(env_file_path)
-
-if not loaded_env:
-	logger.warning(f"Could not load .env file from {env_file_path} when in context:{os.getcwd()}")
-else:
-	logger.info(f".env file loaded successfully from {env_file_path}")
+loaded_env = load_env_variables()
 
 # Database URL from environment or construct from individual vars
 DATABASE_URL = sqlalchemy.engine.URL.create(
@@ -33,13 +28,26 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 logger.info(f"Database engine created with URL: {DATABASE_URL}")
 
+
+def _load_models() -> None:
+	"""Import models so SQLAlchemy registers them with Base metadata."""
+	from backend.models import location, tag, trip, user  # noqa: F401
+
+
+def _ensure_postgres_dependencies() -> None:
+	"""Ensure PostGIS is enabled for geography types."""
+	with engine.connect() as connection:
+		connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+		connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+		connection.commit()
+
 def get_db_session() -> Generator[Session, None, None]:
 	"""
 		!Not recommended for frequent use without proper handling!
 		!Better to use with engine.connect() as session for scoped sessions!
 		Get database session for dependency injection in FastAPI endpoints.
 	"""
-	session = SessionLocal()
+	session = SessionLocal() 
 	try:
 		yield session
 	except Exception as e:
@@ -48,3 +56,29 @@ def get_db_session() -> Generator[Session, None, None]:
 		raise
 	finally:
 		session.close()
+
+
+# Ensure models are registered for relationships (even when not resetting DB).
+_load_models()
+_ensure_postgres_dependencies()
+
+# Ensure tables exist in all environments and log status.
+inspector = sqlalchemy.inspect(engine)
+expected_tables = set(Base.metadata.tables.keys())
+existing_tables = set(inspector.get_table_names())
+missing_tables = expected_tables - existing_tables
+Base.metadata.create_all(bind=engine)
+
+if missing_tables:
+	logger.info(
+		"Database tables created on startup: %s",
+		", ".join(sorted(missing_tables)),
+	)
+else:
+	logger.info("Database tables already existed on startup")
+
+if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
+	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
+	Base.metadata.drop_all(bind=engine)
+	Base.metadata.create_all(bind=engine)
+	logger.info("Database tables created successfully")
