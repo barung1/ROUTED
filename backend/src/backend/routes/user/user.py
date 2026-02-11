@@ -9,11 +9,13 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 import hashlib
 import secrets 
+from datetime import timedelta
 
 from backend.config.db import get_db_session
-from backend.api_models.user import LoginUserModel, RegistrationUserModel, UserPublicModel
+from backend.api_models.user import LoginUserModel, RegistrationUserModel, UserPublicModel, LoginResponseModel
 from backend.models.user import User
 from backend.loggers.logger import get_logger # type: ignore
+from backend.auth.jwt import create_access_token, get_current_user_id
 
 router = APIRouter()
 
@@ -137,26 +139,35 @@ def get_user_by_id(user_id: UUID, db: Session = Depends(get_db_session)) -> User
 		lastName=user.last_name,
 	)
 
-@router.delete("/{user_id}")
-def delete_user(user_id: UUID, db: Session = Depends(get_db_session)) -> None:
-	user = db.execute(select(User).where(User.id == user_id)).scalars().first()
-	if not user:
-		raise HTTPException(
-			status_code=status.HTTP_404_NOT_FOUND,
-			detail="User not found",
-		)
-	db.delete(user)
+@router.delete("/me")
+def delete_current_user(user_id: str = Depends(get_current_user_id), db: Session = Depends(get_db_session)) -> None:
 	try:
+		user_uuid = UUID(user_id)
+		user = db.execute(select(User).where(User.id == user_uuid)).scalars().first()
+		if not user:
+			raise HTTPException(
+				status_code=status.HTTP_404_NOT_FOUND,
+				detail="User not found",
+			)
+		db.delete(user)
 		db.commit()
+	except ValueError:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="Invalid user ID format",
+		)
+	except HTTPException:
+		raise
 	except Exception as e:
 		db.rollback()
+		logger.error(f"Failed to delete user {user_id}: {e}")
 		raise HTTPException(
 			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
 			detail="Failed to delete user",
 		)
 
-@router.post("/login", response_model=UserPublicModel)
-def login_user(credentials: LoginUserModel, db: Session = Depends(get_db_session)) -> UserPublicModel:
+@router.post("/login", response_model=LoginResponseModel)
+def login_user(credentials: LoginUserModel, db: Session = Depends(get_db_session)) -> LoginResponseModel:
 	username_or_email = credentials.usernameOrEmail
 	password = credentials.password
 	isEmail = "@" in username_or_email
@@ -177,10 +188,24 @@ def login_user(credentials: LoginUserModel, db: Session = Depends(get_db_session
 			status_code=status.HTTP_401_UNAUTHORIZED,
 			detail="Invalid username or password",
 		)
-	return UserPublicModel(
+	
+	# Create JWT token
+	access_token_expires = timedelta(hours=int(os.getenv("TOKEN_EXPIRE_HOURS", "24")))
+	access_token = create_access_token(
+		data={"sub": str(user.id), "username": user.username},
+		expires_delta=access_token_expires
+	)
+	
+	user_public = UserPublicModel(
 		id=user.id,
 		username=user.username,
 		email=user.email,
 		firstName=user.first_name,
 		lastName=user.last_name,
+	)
+	
+	return LoginResponseModel(
+		access_token=access_token,
+		token_type="bearer",
+		user=user_public
 	)

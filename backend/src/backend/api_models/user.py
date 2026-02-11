@@ -21,3 +21,8 @@ class UserPublicModel(BaseModel):
 class LoginUserModel(BaseModel):
 	usernameOrEmail: str|EmailStr
 	password: str
+
+class LoginResponseModel(BaseModel):
+	access_token: str
+	token_type: str = "bearer"
+	user: UserPublicModel

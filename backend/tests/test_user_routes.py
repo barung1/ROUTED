@@ -1,4 +1,5 @@
 from uuid import UUID, uuid4
+from datetime import timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -8,6 +9,7 @@ from backend.config.db import get_db_session
 from backend.main import app
 from backend.models.user import User
 from backend.routes.user.user import _hash_password
+from backend.auth.jwt import create_access_token
 
 
 class _ScalarResult:
@@ -186,7 +188,13 @@ def test_delete_user_success(client):
 	fake_session = FakeSession(existing_user=existing_user)
 	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
 
-	response = client.delete(f"/users/{user_id}")
+	# Create a JWT token for the user
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+	
+	response = client.delete("/users/me", headers={"Authorization": f"Bearer {token}"})
 	app.dependency_overrides.clear()
 
 	assert response.status_code == 200
@@ -195,10 +203,17 @@ def test_delete_user_success(client):
 
 
 def test_delete_user_not_found(client):
+	user_id = uuid4()
 	fake_session = FakeSession(existing_user=None)
 	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
 
-	response = client.delete(f"/users/{uuid4()}")
+	# Create a JWT token
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+	
+	response = client.delete("/users/me", headers={"Authorization": f"Bearer {token}"})
 	app.dependency_overrides.clear()
 
 	assert response.status_code == 404
@@ -218,12 +233,29 @@ def test_delete_user_commit_failure(client):
 	fake_session = FakeSession(existing_user=existing_user, commit_exc=Exception("fail"))
 	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
 
-	response = client.delete(f"/users/{user_id}")
+	# Create a JWT token
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+	
+	response = client.delete("/users/me", headers={"Authorization": f"Bearer {token}"})
 	app.dependency_overrides.clear()
 
 	assert response.status_code == 500
 	assert response.json()["detail"] == "Failed to delete user"
 	assert fake_session.rolled_back is True
+
+
+def test_delete_user_unauthorized_no_token(client):
+	"""Test that delete endpoint requires a valid JWT token"""
+	fake_session = FakeSession()
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	response = client.delete("/users/me")
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 401
 
 
 def test_login_user_with_username_success(client):
@@ -248,10 +280,10 @@ def test_login_user_with_username_success(client):
 
 	assert response.status_code == 200
 	body = response.json()
-	assert body["username"] == existing_user.username
-	assert body["email"] == existing_user.email
-	assert body["firstName"] == existing_user.first_name
-	assert body["lastName"] == existing_user.last_name
+	assert body["user"]["username"] == existing_user.username
+	assert body["user"]["email"] == existing_user.email
+	assert body["user"]["firstName"] == existing_user.first_name
+	assert body["user"]["lastName"] == existing_user.last_name
 
 
 def test_login_user_with_email_success(client):
@@ -276,10 +308,10 @@ def test_login_user_with_email_success(client):
 
 	assert response.status_code == 200
 	body = response.json()
-	assert body["username"] == existing_user.username
-	assert body["email"] == existing_user.email
-	assert body["firstName"] == existing_user.first_name
-	assert body["lastName"] == existing_user.last_name
+	assert body["user"]["username"] == existing_user.username
+	assert body["user"]["email"] == existing_user.email
+	assert body["user"]["firstName"] == existing_user.first_name
+	assert body["user"]["lastName"] == existing_user.last_name
 
 
 def test_login_user_not_found(client):
