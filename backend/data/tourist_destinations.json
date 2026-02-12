@@ -1,0 +1,100 @@
+{
+  "tags": [
+    {"name": "nature", "description": "Natural attractions and outdoor destinations", "color": "#00AA00"},
+    {"name": "waterfall", "description": "Waterfall destinations", "color": "#0099FF"},
+    {"name": "scenic", "description": "Scenic views and beautiful landscapes", "color": "#FF9900"},
+    {"name": "family-friendly", "description": "Suitable for families with children", "color": "#FF69B4"},
+    {"name": "hiking", "description": "Hiking trails and trekking destinations", "color": "#8B4513"},
+    {"name": "geology", "description": "Geological and rock formations", "color": "#A9A9A9"},
+    {"name": "wildlife", "description": "Wildlife viewing and animal sanctuaries", "color": "#FFD700"},
+    {"name": "camping", "description": "Camping and outdoor accommodation areas", "color": "#228B22"},
+    {"name": "mountains", "description": "Mountain ranges and peaks", "color": "#696969"},
+    {"name": "lakes", "description": "Lakes and water bodies", "color": "#4169E1"},
+    {"name": "heritage", "description": "Cultural heritage and historical sites", "color": "#8B0000"},
+    {"name": "history", "description": "Historical landmarks and monuments", "color": "#DC143C"},
+    {"name": "monument", "description": "Famous monuments and memorials", "color": "#FFD700"},
+    {"name": "iconic", "description": "Iconic world-famous attractions", "color": "#FF1493"},
+    {"name": "entertainment", "description": "Entertainment venues and attractions", "color": "#FF00FF"},
+    {"name": "nightlife", "description": "Nightlife and evening activities", "color": "#000080"},
+    {"name": "shopping", "description": "Shopping destinations", "color": "#FF69B4"},
+    {"name": "dining", "description": "Dining and food destinations", "color": "#FFA500"},
+    {"name": "engineering", "description": "Engineering marvels and infrastructure", "color": "#708090"},
+    {"name": "skiing", "description": "Skiing and snow sports", "color": "#E0FFFF"},
+    {"name": "mountain", "description": "Mountain destinations", "color": "#8B7355"},
+    {"name": "adventure", "description": "Adventure activities and sports", "color": "#FF4500"},
+    {"name": "resort", "description": "Resort destinations and holiday destinations", "color": "#FFB6C1"},
+    {"name": "urban", "description": "Urban and city attractions", "color": "#2F4F4F"}
+  ],
+  "locations": [
+    {
+      "name": "Niagara Falls",
+      "latitude": 43.0896,
+      "longitude": -79.0849,
+      "description": "One of the world's most famous waterfalls, straddling the Canada-US border",
+      "tags": ["nature", "waterfall", "scenic", "family-friendly"]
+    },
+    {
+      "name": "Grand Canyon",
+      "latitude": 36.1069,
+      "longitude": -112.1129,
+      "description": "Massive erosion canyon in Arizona showcasing geological history",
+      "tags": ["nature", "hiking", "scenic", "geology"]
+    },
+    {
+      "name": "Yellowstone National Park",
+      "latitude": 44.4280,
+      "longitude": -110.5885,
+      "description": "America's first national park featuring geysers, hot springs, and wildlife",
+      "tags": ["nature", "wildlife", "hiking", "camping"]
+    },
+    {
+      "name": "Banff National Park",
+      "latitude": 51.4968,
+      "longitude": -115.9281,
+      "description": "Stunning Canadian Rocky Mountain park with turquoise lakes and pristine wilderness",
+      "tags": ["nature", "mountains", "lakes", "hiking"]
+    },
+    {
+      "name": "Statue of Liberty",
+      "latitude": 40.6892,
+      "longitude": -74.0445,
+      "description": "Iconic symbol of freedom and democracy in New York Harbor",
+      "tags": ["heritage", "history", "monument", "iconic"]
+    },
+    {
+      "name": "Las Vegas Strip",
+      "latitude": 36.1699,
+      "longitude": -115.1398,
+      "description": "Vibrant entertainment district with world-famous casinos, shows, and nightlife",
+      "tags": ["entertainment", "nightlife", "shopping", "dining"]
+    },
+    {
+      "name": "Hoover Dam",
+      "latitude": 36.0154,
+      "longitude": -114.7376,
+      "description": "Engineering marvel hydroelectric dam on the Colorado River",
+      "tags": ["engineering", "scenic", "history", "nature"]
+    },
+    {
+      "name": "Whistler Blackcomb",
+      "latitude": 50.1163,
+      "longitude": -122.9489,
+      "description": "Premier ski resort in British Columbia with world-class skiing and summer activities",
+      "tags": ["skiing", "mountain", "adventure", "resort"]
+    },
+    {
+      "name": "Times Square",
+      "latitude": 40.7580,
+      "longitude": -73.9855,
+      "description": "Bustling commercial intersection in Manhattan known for bright screens and culture",
+      "tags": ["urban", "shopping", "dining", "nightlife"]
+    },
+    {
+      "name": "Lake Louise",
+      "latitude": 51.4254,
+      "longitude": -116.2266,
+      "description": "Breathtaking glacial lake in Alberta with stunning mountain backdrop",
+      "tags": ["nature", "mountains", "lakes", "hiking"]
+    }
+  ]
+}
