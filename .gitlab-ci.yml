@@ -82,6 +82,14 @@ model_tests:
     - changes:
         - backend/models/**
     - when: never
+  services:
+    - name: postgis/postgis:latest
+      alias: postgres
+      pull_policy: if-not-present
+      variables:
+        POSTGRES_USER: routed_user
+        POSTGRES_PASSWORD: routed_password
+        POSTGRES_DB: routed_test
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
     paths:
@@ -89,6 +97,8 @@ model_tests:
       - .cache/pypoetry
   script:
     - cd backend
+    - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
+    - pg_isready -h postgres -p 5432
     - PYTHONPATH=src pytest -q --maxfail=2 #Run all tests as changes to model files can affect multiple test files, so we run all tests instead of just model tests
 
 userRoutes-tests:
@@ -100,6 +110,14 @@ userRoutes-tests:
     - changes:
         - backend/userRoutes/**
     - when: never
+  services:
+    - name: postgis/postgis:latest
+      alias: postgres
+      pull_policy: if-not-present
+      variables:
+        POSTGRES_USER: routed_user
+        POSTGRES_PASSWORD: routed_password
+        POSTGRES_DB: routed_test
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
     paths:
@@ -107,5 +125,7 @@ userRoutes-tests:
       - .cache/pypoetry
   script:
     - cd backend/tests
+    - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
+    - pg_isready -h postgres -p 5432
     - PYTHONPATH=../src pytest test_user_routes.py test_jwt_auth.py -q --maxfail=2
 
