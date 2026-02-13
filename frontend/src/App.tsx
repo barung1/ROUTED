@@ -1,6 +1,7 @@
 import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Landing from './components/Landing'
+import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Trips from './pages/Trips'
 import Dashboard from './pages/Dashboard'
@@ -19,6 +20,7 @@ const App: React.FC = () => {
         <main style={{flex:1}}>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/trips" element={<Trips />} />
             <Route path="/dashboard" element={<Dashboard />} />
