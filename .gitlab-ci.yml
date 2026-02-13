@@ -43,7 +43,7 @@ backend-tests:
   stage: test
   image:
     name: $BACKEND_IMAGE
-    pull_policy: if-not-present
+    pull_policy: always
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
@@ -73,7 +73,7 @@ model_tests:
   stage: test
   image:
     name: $BACKEND_IMAGE
-    pull_policy: if-not-present
+    pull_policy: always
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
@@ -95,7 +95,7 @@ userRoutes-tests:
   stage: test
   image:
     name: $BACKEND_IMAGE
-    pull_policy: if-not-present
+    pull_policy: always
   rules:
     - changes:
         - backend/userRoutes/**
