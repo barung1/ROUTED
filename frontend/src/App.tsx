@@ -8,12 +8,10 @@ import Dashboard from './pages/Dashboard'
 import Suggestions from './pages/Suggestions'
 import Matches from './pages/Matches'
 import Sidebar from './components/Sidebar'
-
 import './App.css'
 
 const App: React.FC = () => {
   return (
-
     <BrowserRouter>
       <div style={{display:'flex'}}>
         <Sidebar />
