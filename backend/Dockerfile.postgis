@@ -1,7 +1,16 @@
-FROM bitnami/postgresql:18
+FROM postgres:18-bookworm
 
 USER root
 
-RUN install_packages postgis postgresql-15-postgis-3
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends \
+	postgis \
+	postgresql-18-postgis-3 \
+	&& rm -rf /var/lib/apt/lists/*
 
-USER 1001
+RUN printf '%s\n' \
+	'CREATE EXTENSION IF NOT EXISTS postgis;' \
+	'CREATE EXTENSION IF NOT EXISTS postgis_topology;' \
+	> /docker-entrypoint-initdb.d/01-postgis.sql
+
+USER postgres
