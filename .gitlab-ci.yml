@@ -99,7 +99,6 @@ userRoutes-tests:
   rules:
     - changes:
         - backend/userRoutes/**
-        - .gitlab-ci.yml
     - when: never
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
