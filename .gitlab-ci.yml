@@ -84,8 +84,6 @@ model_tests:
       when: never
     - changes:
         - backend/models/**
-    - when: manual
-      allow_failure: false
   services:
     - name: postgis/postgis:latest
       alias: postgres
@@ -117,8 +115,6 @@ userRoutes-tests:
       when: never
     - changes:
         - backend/userRoutes/**
-    - when: manual
-      allow_failure: false
   services:
     - name: postgis/postgis:latest
       alias: postgres
