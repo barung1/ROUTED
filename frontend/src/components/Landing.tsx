@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import Header from './Header'
 import './landing.css'
+import TCP from '../assets/TCP.png'
+import SCP from '../assets/SCP.png'
+import SIM from '../assets/SIM.png'
+import CDM from '../assets/CDM.png'
 
 const Landing: React.FC = () => {
   return (
@@ -17,7 +21,7 @@ const Landing: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="max-w-3xl"
         >
-          <h2 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4 text-gray-900">Travel Better.<span className="text-indigo-600 block">Travel Together.</span></h2>
+          <h2 className="text-4xl md:text-5xl font-extrabold leading-tight mb-4 text-gray-900">Where shared paths become <span className="text-indigo-600">shared stories...</span></h2>
           <p className="text-base text-gray-700 mb-8">Routed connects you with compatible travel partners based on shared destinations, travel dates, interests, and preferences — so every trip feels right.</p>
 
           <div className="flex gap-4 justify-center mt-6">
@@ -30,24 +34,24 @@ const Landing: React.FC = () => {
       {/* Features */}
     <section id="features" className="px-4 sm:px-6 md:px-18 py-25 w-full">
     <h3 className="text-3xl font-bold text-center mb-16 text-gray-900">Why Choose Routed?</h3>
-    <div className="max-w-1xl mx-auto grid md:grid-cols-4 gap-2">
+    <div className="max-w-1xl mx-auto grid md:grid-cols-4 gap-6">
           <FeatureCard
-            icon={<span className="text-indigo-600 text-2xl">👥</span>}
+            icon={<img src={SCP} alt="map" className="w-15 h-15 object-contain mx-auto" />}
             title="Smart Compatibility"
-            description="Matches are generated using travel preferences, interests, and overlapping dates."
+            description="Matches are generated using travel preferences and interests"
           />
           <FeatureCard
-            icon={<span className="text-indigo-600 text-2xl">🗺️</span>}
+            icon={<img src={TCP} alt="map" className="w-15 h-15 object-contain mx-auto" />}
             title="Trip-Centric Planning"
-            description="Focus on real trips, structured itineraries, and shared planning tools."
+            description="Focus on real trips, structured itineraries, and shared planning"
           />
           <FeatureCard
-            icon={<span className="text-indigo-600 text-2xl">🛡️</span>}
+            icon={<img src={CDM} alt="map" className="w-15 h-15 object-contain mx-auto" />}
             title="Consent-Driven Matching"
-            description="Both travelers must agree before connecting — privacy and control first."
+            description="All travelers must agree before connecting, privacy first"
           />
           <FeatureCard
-            icon={<span className="text-indigo-600 text-2xl">🛡️</span>}
+            icon={<img src={SIM} alt="map" className="w-15 h-15 object-contain mx-auto" />}
             title="Built with Safety in Mind"
             description="secure authentication to ensure meaningful and safe connections"
             />
