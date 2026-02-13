@@ -1,0 +1,7 @@
+FROM bitnami/postgresql:18
+
+USER root
+
+RUN install_packages postgis postgresql-15-postgis-3
+
+USER 1001
