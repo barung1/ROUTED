@@ -1,0 +1,50 @@
+@startuml models
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 50
+skinparam ranksep 60
+left to right direction
+
+class User {
+  +id: UUID
+  +username: String
+  +email: String
+  +first_name: String
+  +last_name: String
+  +hashed_password: String
+}
+
+class Trip {
+  +id: UUID
+  +location: Location
+  +start_date: String
+  +end_date: String
+  +status: TripStatus
+  +location_id: UUID
+}
+
+enum TripStatus {
+  PLANNED
+  COMPLETED
+  CANCELLED
+}
+
+class Location {
+  +id: UUID
+  +name: String
+  +position: Geography(POINT)
+  +description: String
+}
+
+class Tag {
+  +id: UUID
+  +name: String
+  +description: String
+  +color: String
+}
+
+Location "0..*" -- "0..*" Tag : location_tags
+User "1" -- "0..*" Trip : user_trips
+Trip "0..*" --> "1" Location : location_id
+Trip --> TripStatus : status
+@enduml

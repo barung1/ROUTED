@@ -13,7 +13,11 @@
     
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/vite": "^4.1.18",
+<<<<<<< HEAD
     "autoprefixer": "^10.4.24",
+=======
+    "axios": "^1.13.5",
+>>>>>>> ab07919c9056cfe27e37b4ce65f1e0b487cbb5a8
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^6.14.2",

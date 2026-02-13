@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Landing from './components/Landing'
@@ -7,10 +8,14 @@ import Dashboard from './pages/Dashboard'
 import Suggestions from './pages/Suggestions'
 import Matches from './pages/Matches'
 import Sidebar from './components/Sidebar'
+=======
+import { useState } from 'react'
+>>>>>>> ab07919c9056cfe27e37b4ce65f1e0b487cbb5a8
 import './App.css'
 
 const App: React.FC = () => {
   return (
+<<<<<<< HEAD
     <BrowserRouter>
       <div style={{display:'flex'}}>
         <Sidebar />
@@ -26,6 +31,10 @@ const App: React.FC = () => {
         </main>
       </div>
     </BrowserRouter>
+=======
+    <>
+    </>
+>>>>>>> ab07919c9056cfe27e37b4ce65f1e0b487cbb5a8
   )
 }
 

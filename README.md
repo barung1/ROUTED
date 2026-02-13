@@ -6,24 +6,26 @@
 
 ## Overview
 
-Routed is a travel partner recommendation system designed to connect travelers with compatible companions based on personal preferences, trip details, and location. Unlike other platforms, Routed focuses on meaningful travel connections through precise matching algorithms and consent-driven matchmaking.
+Routed is a travel partner recommendation system designed to connect travelers with compatible companions based on personal preferences, trip details, and location. The focus is on meaningful travel connections through precise matching and consent-driven matchmaking.
 
 ## Problem Statement
 
-Many individuals plan trips at random dates due to hybrid work and academic schedules. While they seek compatible companions for social interaction and enjoyable trips, existing online platforms don't adequately account for personal preferences, resulting in non-compatible matches.
+Many individuals plan trips at random dates due to hybrid work and academic schedules. While they seek compatible companions for social interaction and enjoyable trips, existing platforms do not adequately account for personal preferences, resulting in non-compatible matches.
 
 ## Key Features (Most are yet to be implemented)
 
 - **User Authentication** - Secure login and registration system
-- **Profile Management** - Customize your travel preferences and interests
+- **Profile Management** - Customize travel preferences and interests
 - **Trip Management** - Create and manage trip details with structured data
-- **Smart Recommendations** - Algorithm-driven matching based on:
-  - Personal preferences
-  - Trip details and dates
-  - Location compatibility
-  - User interests
+- **Smart Recommendations** - Algorithm-driven matching based on preferences, dates, locations, and interests
 - **Consent-Driven Matching** - Privacy-focused matchmaking with user control
-- **Enhanced Privacy** - Your data is protected and shared only with consent
+- **Enhanced Privacy** - Data is protected and shared only with consent
+
+## Tech Stack
+
+- **Backend**: FastAPI, SQLAlchemy, Pydantic, Uvicorn, PostgreSQL
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS
+- **Tooling**: Poetry, Pytest, ESLint
 
 ## Architecture
 
@@ -33,11 +35,13 @@ Routed/
 │   ├── src/
 │   │   └── backend/
 │   │       ├── main.py           # FastAPI application
-│   │       ├── loggers/          # Logging system
-│   │       └── ...
+│   │       ├── config/           # DB configuration
+│   │       └── models/           # SQLAlchemy models
 │   └── tests/        # Backend tests
 ├── frontend/         # React + TypeScript frontend
 │   └── src/
+├── env/              # Local .env (not committed)
+├── UML/              # UML diagrams
 └── project docs/     # Project documentation
 ```
 
@@ -49,6 +53,26 @@ Routed/
 - Node.js 18+
 - Poetry (for Python dependency management)
 
+### Environment Variables
+
+Create `env/.env` (not committed) and set the database and app settings. Minimal example:
+
+```bash
+# Database
+POSTGRES_USER=routed_user
+POSTGRES_PASSWORD=routed_password
+POSTGRES_DB=routed
+
+# For backend running locally against a local DB
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
+
+# Frontend
+VITE_API_URL=http://localhost:8000
+```
+
+If you run PostgreSQL via Docker Compose and run the backend locally, use `POSTGRES_PORT=5433` (compose maps `5433:5432`). If both backend and DB run in Docker Compose, set `POSTGRES_HOST=postgres` and `POSTGRES_PORT=5432`.
+
 ### Backend Setup
 
 ```bash
@@ -57,7 +81,7 @@ poetry install
 poetry run dev
 ```
 
-The backend server will start at `http://localhost:8000`
+The backend server starts at `http://localhost:8000`. OpenAPI docs are at `http://localhost:8000/docs`.
 
 ### Frontend Setup
 
@@ -67,7 +91,15 @@ npm install
 npm run dev
 ```
 
-The frontend will start at `http://localhost:5173`
+The frontend starts at `http://localhost:5173`.
+
+### Docker Compose (Full Stack)
+
+```bash
+docker compose up --build
+```
+
+This starts PostgreSQL, the backend, and the frontend using `env/.env`.
 
 ## Testing
 
@@ -93,8 +125,6 @@ poetry run test
 - Achieve higher confidence in partner selection
 
 ## Privacy & Security
-
-Routed prioritizes user privacy with:
 
 - Consent-based information sharing
 - Secure authentication

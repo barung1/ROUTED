@@ -6,3 +6,7 @@ dist/
 */__pycache__/
 .vscode/
 */.pytest_cache/
+.github/*
+.gitlab-ci-local
+config.toml
+.runner_system_id
