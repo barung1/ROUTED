@@ -17,14 +17,9 @@ variables:
 
 backend-image:
   stage: build
-  image: docker:24
-  services:
-    - name: docker:24-dind
-      alias: docker
-      pull_policy: if-not-present
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_HOST: tcp://docker:2375
+  image:
+    name: docker:24
+    pull_policy: if-not-present
   rules:
     - changes:
         - backend/Dockerfile
@@ -43,14 +38,9 @@ backend-image:
 
 postgis-image:
   stage: build
-  image: docker:24
-  services:
-    - name: docker:24-dind
-      alias: docker
-      pull_policy: if-not-present
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_HOST: tcp://docker:2375
+  image:
+    name: docker:24
+    pull_policy: if-not-present
   rules:
     - changes:
         - backend/Dockerfile.postgis
