@@ -18,7 +18,7 @@ variables:
 backend-image:
   stage: build
   image:
-    name: docker:24
+    name: docker:29
     pull_policy: if-not-present
   rules:
     - changes:
@@ -39,7 +39,7 @@ backend-image:
 postgis-image:
   stage: build
   image:
-    name: docker:24
+    name: docker:29
     pull_policy: if-not-present
   rules:
     - changes:
