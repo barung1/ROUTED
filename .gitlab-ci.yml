@@ -41,11 +41,8 @@ backend-image:
 
 backend-tests:
   stage: test
-  before_script:
-    - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
-    - export BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
   image:
-    name: $BACKEND_IMAGE_HASH
+    name: $BACKEND_IMAGE
     pull_policy: if-not-present
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -74,11 +71,8 @@ backend-tests:
 
 model_tests:
   stage: test
-  before_script:
-    - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
-    - export BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
   image:
-    name: $BACKEND_IMAGE_HASH
+    name: $BACKEND_IMAGE
     pull_policy: if-not-present
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
@@ -99,11 +93,8 @@ model_tests:
 
 userRoutes-tests:
   stage: test
-  before_script:
-    - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
-    - export BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
   image:
-    name: $BACKEND_IMAGE_HASH
+    name: $BACKEND_IMAGE
     pull_policy: if-not-present
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
