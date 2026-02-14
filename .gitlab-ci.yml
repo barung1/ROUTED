@@ -45,12 +45,16 @@ postgis-image:
     - changes:
         - backend/Dockerfile.postgis
         - .gitlab-ci.yml
+      when: on_success
     - when: manual
       allow_failure: false
   script:
+    - DOCKERFILE_HASH=$(cat backend/Dockerfile.postgis | sha256sum | cut -d' ' -f1 | cut -c1-12)
+    - POSTGIS_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-postgis:dockerfile-$DOCKERFILE_HASH"
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$REGISTRY_URL"
-    - docker build -t "$POSTGIS_IMAGE" -f backend/Dockerfile.postgis backend
+    - docker build -t "$POSTGIS_IMAGE" -t "$POSTGIS_IMAGE_HASH" -f backend/Dockerfile.postgis backend
     - docker push "$POSTGIS_IMAGE"
+    - docker push "$POSTGIS_IMAGE_HASH"
 
 backend-tests:
   stage: test
