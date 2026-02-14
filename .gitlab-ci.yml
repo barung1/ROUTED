@@ -82,11 +82,18 @@ backend-tests:
     paths:
       - .cache/pip
       - .cache/pypoetry
+  artifacts:
+    when: always
+    paths:
+      - backend/test-reports/
+    reports:
+      junit: backend/test-reports/pytest.xml
   script:
     - cd backend
     - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
     - pg_isready -h postgres -p 5432
-    - PYTHONPATH=src pytest -q --maxfail=2
+    - mkdir -p test-reports
+    - PYTHONPATH=src pytest -q --maxfail=2 --junitxml=test-reports/pytest.xml
 
 model_tests:
   stage: test
@@ -113,11 +120,18 @@ model_tests:
     paths:
       - .cache/pip
       - .cache/pypoetry
+  artifacts:
+    when: always
+    paths:
+      - backend/test-reports/
+    reports:
+      junit: backend/test-reports/pytest.xml
   script:
     - cd backend
     - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
     - pg_isready -h postgres -p 5432
-    - PYTHONPATH=src pytest -q --maxfail=2 #Run all tests as changes to model files can affect multiple test files, so we run all tests instead of just model tests
+    - mkdir -p test-reports
+    - PYTHONPATH=src pytest -q --maxfail=2 --junitxml=test-reports/pytest.xml #Run all tests as changes to model files can affect multiple test files, so we run all tests instead of just model tests
 
 userRoutes-tests:
   stage: test
@@ -144,9 +158,16 @@ userRoutes-tests:
     paths:
       - .cache/pip
       - .cache/pypoetry
+  artifacts:
+    when: always
+    paths:
+      - backend/test-reports/
+    reports:
+      junit: backend/test-reports/userRoutes.xml
   script:
     - cd backend/tests
     - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
     - pg_isready -h postgres -p 5432
-    - PYTHONPATH=../src pytest test_user_routes.py test_jwt_auth.py -q --maxfail=2
+    - mkdir -p ../test-reports
+    - PYTHONPATH=../src pytest test_user_routes.py test_jwt_auth.py -q --maxfail=2 --junitxml=../test-reports/userRoutes.xml
 
