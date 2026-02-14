@@ -8,7 +8,7 @@ const Header: React.FC = () => {
       <div className="w-full px-0">
         <div className="flex items-center h-16 justify-between">
           <Link to="/" className="flex items-center gap-3 pl-0" aria-label="Routed home">
-            <img src={logo} alt="Routed logo" className="w-40 h-40 object-contain transform translate-y-8 translate-x-140 md:translate-x-10" />
+            <img src={logo} alt="Routed logo" className="w-60 h-60 object-contain transform translate-y-8 translate-x-140 md:translate-x-10" />
           </Link>
 
           <div className="hidden md:flex items-center gap-4">
