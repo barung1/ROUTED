@@ -13,49 +13,64 @@ variables:
   RESET_DB_ON_STARTUP: 'false'
   REGISTRY_URL: "git.uwaterloo.ca:5050"
   BACKEND_IMAGE: "$REGISTRY_URL/h3sood/routed/routed-backend:latest"
+  POSTGIS_IMAGE: "$REGISTRY_URL/h3sood/routed/routed-postgis:latest"
 
 backend-image:
   stage: build
   image:
-    name: moby/buildkit:rootless
+    name: docker:29
     pull_policy: if-not-present
-  variables:
-    BUILDKITD_FLAGS: --oci-worker-no-process-sandbox
   rules:
     - changes:
         - backend/Dockerfile
         - backend/pyproject.toml
         - backend/poetry.lock
         - .gitlab-ci.yml
-    - when: never
+    - when: manual
+      allow_failure: false
   script:
     - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
     - BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
-    - mkdir -p "$HOME/.docker"
-    - echo "{\"auths\":{\"$REGISTRY_URL\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_JOB_TOKEN\"}}}" > "$HOME/.docker/config.json"
-    - buildctl-daemonless.sh build \
-        --frontend dockerfile.v0 \
-        --local context=backend \
-        --local dockerfile=backend \
-        --output type=image,name="$BACKEND_IMAGE",push=true \
-        --output type=image,name="$BACKEND_IMAGE_HASH",push=true
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$REGISTRY_URL"
+    - docker build -t "$BACKEND_IMAGE" -t "$BACKEND_IMAGE_HASH" -f backend/Dockerfile backend
+    - docker push "$BACKEND_IMAGE"
+    - docker push "$BACKEND_IMAGE_HASH"
+
+postgis-image:
+  stage: build
+  image:
+    name: docker:29
+    pull_policy: if-not-present
+  rules:
+    - changes:
+        - backend/Dockerfile.postgis
+        - .gitlab-ci.yml
+      when: on_success
+    - when: manual
+      allow_failure: false
+  script:
+    - DOCKERFILE_HASH=$(cat backend/Dockerfile.postgis | sha256sum | cut -d' ' -f1 | cut -c1-12)
+    - POSTGIS_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-postgis:dockerfile-$DOCKERFILE_HASH"
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$REGISTRY_URL"
+    - docker build -t "$POSTGIS_IMAGE" -t "$POSTGIS_IMAGE_HASH" -f backend/Dockerfile.postgis backend
+    - docker push "$POSTGIS_IMAGE"
+    - docker push "$POSTGIS_IMAGE_HASH"
 
 backend-tests:
   stage: test
-  before_script:
-    - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
-    - export BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
   image:
-    name: $BACKEND_IMAGE_HASH
-    pull_policy: if-not-present
+    name: $BACKEND_IMAGE
+    pull_policy: always
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
         - backend/**/*
     - changes:
         - .gitlab-ci.yml
+    - when: manual
+      allow_failure: false
   services:
-    - name: postgis/postgis:latest
+    - name: $POSTGIS_IMAGE
       alias: postgres
       pull_policy: if-not-present
       variables:
@@ -67,20 +82,24 @@ backend-tests:
     paths:
       - .cache/pip
       - .cache/pypoetry
+  artifacts:
+    when: always
+    paths:
+      - backend/test-reports/
+    reports:
+      junit: backend/test-reports/pytest.xml
   script:
     - cd backend
     - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
     - pg_isready -h postgres -p 5432
-    - PYTHONPATH=src pytest -q --maxfail=2
+    - mkdir -p test-reports
+    - PYTHONPATH=src pytest -q --maxfail=2 --junitxml=test-reports/pytest.xml
 
 model_tests:
   stage: test
-  before_script:
-    - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
-    - export BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
   image:
-    name: $BACKEND_IMAGE_HASH
-    pull_policy: if-not-present
+    name: $BACKEND_IMAGE
+    pull_policy: always
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
@@ -88,35 +107,67 @@ model_tests:
       when: never
     - changes:
         - backend/models/**
-    - when: never
+  services:
+    - name: $POSTGIS_IMAGE
+      alias: postgres
+      pull_policy: if-not-present
+      variables:
+        POSTGRES_USER: routed_user
+        POSTGRES_PASSWORD: routed_password
+        POSTGRES_DB: routed_test
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
     paths:
       - .cache/pip
       - .cache/pypoetry
+  artifacts:
+    when: always
+    paths:
+      - backend/test-reports/
+    reports:
+      junit: backend/test-reports/pytest.xml
   script:
     - cd backend
-    - PYTHONPATH=src pytest -q --maxfail=2 #Run all tests as changes to model files can affect multiple test files, so we run all tests instead of just model tests
+    - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
+    - pg_isready -h postgres -p 5432
+    - mkdir -p test-reports
+    - PYTHONPATH=src pytest -q --maxfail=2 --junitxml=test-reports/pytest.xml #Run all tests as changes to model files can affect multiple test files, so we run all tests instead of just model tests
 
 userRoutes-tests:
   stage: test
-  before_script:
-    - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
-    - export BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
   image:
-    name: $BACKEND_IMAGE_HASH
-    pull_policy: if-not-present
+    name: $BACKEND_IMAGE
+    pull_policy: always
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - backend/**/*
+      when: never
     - changes:
         - backend/userRoutes/**
-        - .gitlab-ci.yml
-    - when: never
+  services:
+    - name: $POSTGIS_IMAGE
+      alias: postgres
+      pull_policy: if-not-present
+      variables:
+        POSTGRES_USER: routed_user
+        POSTGRES_PASSWORD: routed_password
+        POSTGRES_DB: routed_test
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
     paths:
       - .cache/pip
       - .cache/pypoetry
+  artifacts:
+    when: always
+    paths:
+      - backend/test-reports/
+    reports:
+      junit: backend/test-reports/userRoutes.xml
   script:
     - cd backend/tests
-    - PYTHONPATH=../src pytest test_user_routes.py test_jwt_auth.py -q --maxfail=2
+    - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
+    - pg_isready -h postgres -p 5432
+    - mkdir -p ../test-reports
+    - PYTHONPATH=../src pytest test_user_routes.py test_jwt_auth.py -q --maxfail=2 --junitxml=../test-reports/userRoutes.xml
 
