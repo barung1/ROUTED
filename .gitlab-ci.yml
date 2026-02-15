@@ -29,6 +29,9 @@ backend-image:
     - when: manual
       allow_failure: false
   script:
+    - echo "DOCKER_HOST=$DOCKER_HOST"
+    - env | grep DOCKER
+    - docker info
     - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
     - BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$REGISTRY_URL"
