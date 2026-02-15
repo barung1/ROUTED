@@ -3,7 +3,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from sqlalchemy.orm import joinedload, selectinload
 
 from backend.api_models.trip import TripCreateModel, TripPublicModel, TripUpdateModel
 from backend.auth.jwt import get_current_user_id
@@ -15,39 +14,13 @@ from backend.models.user import User
 router = APIRouter()
 
 
-def _assert_trip_ownership(trip: Trip, user_id: UUID) -> None:
-	"""Verify that the trip belongs to the specified user.
-	
-	Raises:
-		HTTPException: 403 if trip doesn't belong to user
-	"""
-	if not trip.user or trip.user.id != user_id:
-		raise HTTPException(
-			status_code=status.HTTP_403_FORBIDDEN,
-			detail="Not authorized to access this trip",
-		)
-
-
-def _validate_date_range(start_date, end_date) -> None:
-	"""Validate that end date is not before start date.
-	
-	Raises:
-		HTTPException: 422 if date range is invalid
-	"""
-	if start_date and end_date and end_date < start_date:
-		raise HTTPException(
-			status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-			detail="End date must be on or after start date",
-		)
-
-
 def _to_public(trip: Trip) -> TripPublicModel:
 	return TripPublicModel(
 		id=trip.id,
 		userId=trip.user.id if trip.user else None,
 		locationId=trip.location_id,
-		startDate=trip.start_date.isoformat() if trip.start_date else "",
-		endDate=trip.end_date.isoformat() if trip.end_date else "",
+		startDate=trip.start_date,
+		endDate=trip.end_date,
 		status=trip.status,
 	)
 
@@ -58,9 +31,6 @@ def create_trip(
 	user_id: UUID = Depends(get_current_user_id),
 	db: Session = Depends(get_db_session),
 ) -> TripPublicModel:
-	# Validate date range
-	_validate_date_range(trip.startDate, trip.endDate)
-	
 	user = db.execute(select(User).where(User.id == user_id)).scalars().first()
 	if not user:
 		raise HTTPException(
@@ -73,22 +43,17 @@ def create_trip(
 			status_code=status.HTTP_404_NOT_FOUND,
 			detail="Location not found",
 		)
-	
-	try:
-		new_trip = Trip(
-			start_date=trip.startDate,
-			end_date=trip.endDate,
-			status=trip.status or TripStatus.PLANNED,
-			location_id=trip.locationId,
-		)
-		new_trip.user = user
-		db.add(new_trip)
-		db.commit()
-		db.refresh(new_trip)
-		return _to_public(new_trip)
-	except Exception:
-		db.rollback()
-		raise
+	new_trip = Trip(
+		start_date=trip.startDate,
+		end_date=trip.endDate,
+		status=trip.status or TripStatus.PLANNED,
+		location_id=trip.locationId,
+	)
+	new_trip.user = user
+	db.add(new_trip)
+	db.commit()
+	db.refresh(new_trip)
+	return _to_public(new_trip)
 
 
 @router.get("/me", response_model=list[TripPublicModel])
@@ -96,7 +61,7 @@ def list_my_trips(
 	user_id: UUID = Depends(get_current_user_id),
 	db: Session = Depends(get_db_session),
 ) -> list[TripPublicModel]:
-	user = db.execute(select(User).where(User.id == user_id).options(selectinload(User.trips))).scalars().first()
+	user = db.execute(select(User).where(User.id == user_id)).scalars().first()
 	if not user:
 		raise HTTPException(
 			status_code=status.HTTP_404_NOT_FOUND,
@@ -106,20 +71,13 @@ def list_my_trips(
 
 
 @router.get("/{trip_id}", response_model=TripPublicModel)
-def get_trip_by_id(
-	trip_id: UUID,
-	user_id: UUID = Depends(get_current_user_id),
-	db: Session = Depends(get_db_session),
-) -> TripPublicModel:
-	trip = db.execute(
-		select(Trip).where(Trip.id == trip_id).options(selectinload(Trip.user))
-	).scalars().first()
+def get_trip_by_id(trip_id: UUID, db: Session = Depends(get_db_session)) -> TripPublicModel:
+	trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalars().first()
 	if not trip:
 		raise HTTPException(
 			status_code=status.HTTP_404_NOT_FOUND,
 			detail="Trip not found",
 		)
-	_assert_trip_ownership(trip, user_id)
 	return _to_public(trip)
 
 
@@ -136,38 +94,29 @@ def update_trip(
 			status_code=status.HTTP_404_NOT_FOUND,
 			detail="Trip not found",
 		)
-	_assert_trip_ownership(trip, user_id)
-	
-	try:
-		if update.locationId is not None:
-			location = db.execute(select(Location).where(Location.id == update.locationId)).scalars().first()
-			if not location:
-				raise HTTPException(
-					status_code=status.HTTP_404_NOT_FOUND,
-					detail="Location not found",
-				)
-			trip.location_id = update.locationId
-		if update.startDate is not None:
-			trip.start_date = datetime.datetime.fromisoformat(update.startDate)
-		if update.endDate is not None:
-			trip.end_date = datetime.datetime.fromisoformat(update.endDate)
-		if update.status is not None:
-			# Status transitions: All transitions are currently allowed.
-			# To enforce business rules (e.g., COMPLETED → PLANNED not allowed),
-			# add validation here before assignment.
-			trip.status = update.status
-		
-		# Validate date range after all updates applied
-		_validate_date_range(trip.start_date, trip.end_date)
-		db.commit()
-		db.refresh(trip)
-		return _to_public(trip)
-	except HTTPException:
-		db.rollback()
-		raise
-	except Exception:
-		db.rollback()
-		raise
+	if not trip.user or trip.user.id != user_id:
+		raise HTTPException(
+			status_code=status.HTTP_403_FORBIDDEN,
+			detail="Not authorized to update this trip",
+		)
+	if update.locationId is not None:
+		location = db.execute(select(Location).where(Location.id == update.locationId)).scalars().first()
+		if not location:
+			raise HTTPException(
+				status_code=status.HTTP_404_NOT_FOUND,
+				detail="Location not found",
+			)
+		trip.location_id = update.locationId
+	if update.startDate is not None:
+		trip.start_date = update.startDate
+	if update.endDate is not None:
+		trip.end_date = update.endDate
+	if update.status is not None:
+		trip.status = update.status
+
+	db.commit()
+	db.refresh(trip)
+	return _to_public(trip)
 
 
 @router.delete("/{trip_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -182,11 +131,10 @@ def delete_trip(
 			status_code=status.HTTP_404_NOT_FOUND,
 			detail="Trip not found",
 		)
-	_assert_trip_ownership(trip, user_id)
-	
-	try:
-		db.delete(trip)
-		db.commit()
-	except Exception:
-		db.rollback()
-		raise
+	if not trip.user or trip.user.id != user_id:
+		raise HTTPException(
+			status_code=status.HTTP_403_FORBIDDEN,
+			detail="Not authorized to delete this trip",
+		)
+	db.delete(trip)
+	db.commit()

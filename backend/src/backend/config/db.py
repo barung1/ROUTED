@@ -42,16 +42,14 @@ def _load_models() -> None:
 
 
 def _ensure_postgres_dependencies() -> None:
-	"""Ensure schema and PostGIS extension are available."""
-	db_schema = os.getenv('DB_SCHEMA', 'routed')
-	with engine.connect() as connection:
-		# Create schema if it doesn't exist
-		connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {db_schema}"))
-		connection.commit()
-		# Create extensions in public schema (globally available)
-		connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
-		connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
-		connection.commit()
+	"""Ensure PostGIS is enabled for geography types."""
+	try:
+		with engine.connect() as connection:
+			connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+			connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+			connection.commit()
+	except Exception as e:
+		logger.warning(f"Could not connect to database to set up extensions: {e}. Skipping. Tables will not auto-create until DB is available.")
 
 def get_db_session() -> Generator[Session, None, None]:
 	"""
@@ -75,29 +73,10 @@ _load_models()
 _ensure_postgres_dependencies()
 # Ensure tables exist in all environments and log status.
 try:
-	with engine.connect() as connection:
-		from backend.models.location import Location
-		import sqlalchemy
-		from sqlalchemy import select, func
-		stmt = select(func.count(Location.id))
-		result = connection.execute(stmt)
-		count = result.scalar()
-		if count and count > 0:
-			locations_populated = True
-except Exception as e:
-	logger.error(f"Failed to check locations population: {e}")
-
-if not locations_populated:
-	from backend.scripts.seed_destinations import seed_destinations
-	try:
-		seed_destinations()
-		logger.info("Locations table seeded successfully")
-	except Exception as e:
-		logger.error(f"Failed to seed locations: {e}")
-
-if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
-	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
-	Base.metadata.drop_all(bind=engine)
+	inspector = sqlalchemy.inspect(engine)
+	expected_tables = set(Base.metadata.tables.keys())
+	existing_tables = set(inspector.get_table_names())
+	missing_tables = expected_tables - existing_tables
 	Base.metadata.create_all(bind=engine)
 
 	if missing_tables:
