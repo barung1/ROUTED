@@ -13,17 +13,13 @@ variables:
   RESET_DB_ON_STARTUP: 'false'
   REGISTRY_URL: "git.uwaterloo.ca:5050"
   BACKEND_IMAGE: "$REGISTRY_URL/h3sood/routed/routed-backend:latest"
+  POSTGIS_IMAGE: "$REGISTRY_URL/h3sood/routed/routed-postgis:latest"
 
 backend-image:
   stage: build
-  image: docker:24
-  services:
-    - name: docker:24-dind
-      alias: docker
-      pull_policy: if-not-present
-  variables:
-    DOCKER_TLS_CERTDIR: ""
-    DOCKER_HOST: tcp://docker:2375
+  image:
+    name: docker:29
+    pull_policy: if-not-present
   rules:
     - changes:
         - backend/Dockerfile
@@ -40,6 +36,26 @@ backend-image:
     - docker push "$BACKEND_IMAGE"
     - docker push "$BACKEND_IMAGE_HASH"
 
+postgis-image:
+  stage: build
+  image:
+    name: docker:29
+    pull_policy: if-not-present
+  rules:
+    - changes:
+        - backend/Dockerfile.postgis
+        - .gitlab-ci.yml
+      when: on_success
+    - when: manual
+      allow_failure: false
+  script:
+    - DOCKERFILE_HASH=$(cat backend/Dockerfile.postgis | sha256sum | cut -d' ' -f1 | cut -c1-12)
+    - POSTGIS_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-postgis:dockerfile-$DOCKERFILE_HASH"
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$REGISTRY_URL"
+    - docker build -t "$POSTGIS_IMAGE" -t "$POSTGIS_IMAGE_HASH" -f backend/Dockerfile.postgis backend
+    - docker push "$POSTGIS_IMAGE"
+    - docker push "$POSTGIS_IMAGE_HASH"
+
 backend-tests:
   stage: test
   image:
@@ -54,7 +70,7 @@ backend-tests:
     - when: manual
       allow_failure: false
   services:
-    - name: postgis/postgis:latest
+    - name: $POSTGIS_IMAGE
       alias: postgres
       pull_policy: if-not-present
       variables:
@@ -66,11 +82,18 @@ backend-tests:
     paths:
       - .cache/pip
       - .cache/pypoetry
+  artifacts:
+    when: always
+    paths:
+      - backend/test-reports/
+    reports:
+      junit: backend/test-reports/pytest.xml
   script:
     - cd backend
     - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
     - pg_isready -h postgres -p 5432
-    - PYTHONPATH=src pytest -q --maxfail=2
+    - mkdir -p test-reports
+    - PYTHONPATH=src pytest -q --maxfail=2 --junitxml=test-reports/pytest.xml
 
 model_tests:
   stage: test
@@ -85,7 +108,7 @@ model_tests:
     - changes:
         - backend/models/**
   services:
-    - name: postgis/postgis:latest
+    - name: $POSTGIS_IMAGE
       alias: postgres
       pull_policy: if-not-present
       variables:
@@ -97,11 +120,18 @@ model_tests:
     paths:
       - .cache/pip
       - .cache/pypoetry
+  artifacts:
+    when: always
+    paths:
+      - backend/test-reports/
+    reports:
+      junit: backend/test-reports/pytest.xml
   script:
     - cd backend
     - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
     - pg_isready -h postgres -p 5432
-    - PYTHONPATH=src pytest -q --maxfail=2 #Run all tests as changes to model files can affect multiple test files, so we run all tests instead of just model tests
+    - mkdir -p test-reports
+    - PYTHONPATH=src pytest -q --maxfail=2 --junitxml=test-reports/pytest.xml #Run all tests as changes to model files can affect multiple test files, so we run all tests instead of just model tests
 
 userRoutes-tests:
   stage: test
@@ -116,7 +146,7 @@ userRoutes-tests:
     - changes:
         - backend/userRoutes/**
   services:
-    - name: postgis/postgis:latest
+    - name: $POSTGIS_IMAGE
       alias: postgres
       pull_policy: if-not-present
       variables:
@@ -128,9 +158,16 @@ userRoutes-tests:
     paths:
       - .cache/pip
       - .cache/pypoetry
+  artifacts:
+    when: always
+    paths:
+      - backend/test-reports/
+    reports:
+      junit: backend/test-reports/userRoutes.xml
   script:
     - cd backend/tests
     - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
     - pg_isready -h postgres -p 5432
-    - PYTHONPATH=../src pytest test_user_routes.py test_jwt_auth.py -q --maxfail=2
+    - mkdir -p ../test-reports
+    - PYTHONPATH=../src pytest test_user_routes.py test_jwt_auth.py -q --maxfail=2 --junitxml=../test-reports/userRoutes.xml
 

@@ -55,7 +55,14 @@ Routed/
 
 ### Environment Variables
 
-Create `env/.env` (not committed) and set the database and app settings. Minimal example:
+Create `env/.env` (not committed) from the template in `env/env.template.txt`.
+
+Use a helper script:
+
+- PowerShell (Windows): `./env/create-env.ps1` (add `-Force` to overwrite)
+- Bash (macOS/Linux): `./env/create-env.sh`
+
+Or create it manually. Minimal example:
 
 ```bash
 # Database
@@ -72,6 +79,8 @@ VITE_API_URL=http://localhost:8000
 ```
 
 If you run PostgreSQL via Docker Compose and run the backend locally, use `POSTGRES_PORT=5433` (compose maps `5433:5432`). If both backend and DB run in Docker Compose, set `POSTGRES_HOST=postgres` and `POSTGRES_PORT=5432`.
+
+Backend-only runs require the database settings and `JWT_SECRET_KEY` (see `env/env.template.txt`). Full Docker Compose uses the same `env/.env` file for backend + frontend.
 
 ### Backend Setup
 
