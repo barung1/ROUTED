@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from backend.config.db import get_db_session, engine # type: ignore
 from backend.loggers.logger import get_logger # type: ignore
 from backend.routes.user.user import router as user_router
-from backend.routes.location import router as location_router
+from backend.routes.trip.trip import router as trip_router
 
 logger = get_logger(__name__, "app.log")
 
@@ -23,6 +23,7 @@ app = FastAPI(
 logger.info("FastAPI application created successfully")
 
 app.include_router(user_router, prefix="/users", tags=["Users"])
+app.include_router(trip_router, prefix="/trips", tags=["Trips"])
 
 app.include_router(location_router, prefix="/locations", tags=["Locations"],dependencies=[Depends(get_current_user_id)])
 

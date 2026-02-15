@@ -38,10 +38,13 @@ def _load_models() -> None:
 
 def _ensure_postgres_dependencies() -> None:
 	"""Ensure PostGIS is enabled for geography types."""
-	with engine.connect() as connection:
-		connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
-		connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
-		connection.commit()
+	try:
+		with engine.connect() as connection:
+			connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+			connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+			connection.commit()
+	except Exception as e:
+		logger.warning(f"Could not connect to database to set up extensions: {e}. Skipping. Tables will not auto-create until DB is available.")
 
 def get_db_session() -> Generator[Session, None, None]:
 	"""
@@ -65,48 +68,25 @@ _load_models()
 _ensure_postgres_dependencies()
 
 # Ensure tables exist in all environments and log status.
-inspector = sqlalchemy.inspect(engine)
-expected_tables = set(Base.metadata.tables.keys())
-existing_tables = set(inspector.get_table_names())
-missing_tables = expected_tables - existing_tables
-
-if missing_tables:
-	Base.metadata.create_all(bind=engine)
-	logger.info(
-		"Database tables created on startup: %s",
-		", ".join(sorted(missing_tables)),
-	)
-else:
-	logger.info("Database tables already existed on startup")
-
-locations_populated = False
 try:
-	with engine.connect() as connection:
-		from backend.models.location import Location
-		result = connection.execute(text("SELECT COUNT(*) FROM locations"))
-		count = result.scalar()
-		if count and count > 0:
-			locations_populated = True
-except Exception as e:
-	logger.error(f"Failed to check locations population: {e}")
-
-if not locations_populated:
-	from backend.scripts.seed_destinations import seed_destinations
-	try:
-		seed_destinations()
-		logger.info("Locations table seeded successfully")
-	except Exception as e:
-		logger.error(f"Failed to seed locations: {e}")
-
-if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
-	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
-	Base.metadata.drop_all(bind=engine)
+	inspector = sqlalchemy.inspect(engine)
+	expected_tables = set(Base.metadata.tables.keys())
+	existing_tables = set(inspector.get_table_names())
+	missing_tables = expected_tables - existing_tables
 	Base.metadata.create_all(bind=engine)
-	logger.info("Database tables created successfully")
-	try:
-		from backend.scripts.seed_destinations import seed_destinations
-		seed_destinations()
-		logger.info("Locations table seeded successfully after reset")
-	except Exception as e:
-		logger.error(f"Failed to seed locations after reset: {e}")
-	# seed_destinations()
+
+	if missing_tables:
+		logger.info(
+			"Database tables created on startup: %s",
+			", ".join(sorted(missing_tables)),
+		)
+	else:
+		logger.info("Database tables already existed on startup")
+
+	if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
+		logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
+		Base.metadata.drop_all(bind=engine)
+		Base.metadata.create_all(bind=engine)
+		logger.info("Database tables created successfully")
+except Exception as e:
+	logger.warning(f"Could not initialize database tables on startup: {e}. Tables will be created when database becomes available.")
