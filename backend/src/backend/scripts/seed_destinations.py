@@ -6,15 +6,17 @@ import json
 import sys
 from pathlib import Path
 from geoalchemy2.elements import WKTElement
-from sqlalchemy.orm import Session
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from backend.config.db import get_db_session, SessionLocal, engine, _load_models, _ensure_postgres_dependencies
+from backend.config.db import get_db_session, engine, _load_models, _ensure_postgres_dependencies
+from backend.loggers.logger import get_logger
 from backend.models.Base import Base
 from backend.models.location import Location
 from backend.models.tag import Tag
+
+logger = get_logger("seed_destinations", "seed_destinations.log")
 
 
 def load_destinations_json():
@@ -22,7 +24,7 @@ def load_destinations_json():
     json_path = Path(__file__).parent.parent.parent.parent / "data" / "tourist_destinations.json"
     
     if not json_path.exists():
-        print(f"Error: JSON file not found at {json_path}")
+        logger.error("JSON file not found at %s", json_path)
         return None
     
     with open(json_path, 'r') as f:
@@ -45,14 +47,14 @@ def seed_destinations():
     Base.metadata.create_all(bind=engine)
     
     # Get database session
-    db = SessionLocal()
+    db = next(get_db_session())
     
     try:
         # First, seed all tags from the top-level tags section
         tags_data = data.get('tags', [])
         tags_map = {}  # Map of tag_name -> Tag object
         
-        print(f"Loading {len(tags_data)} tags...")
+        logger.info("Loading %s tags...", len(tags_data))
         for tag_data in tags_data:
             tag_name = tag_data['name']
             
@@ -61,7 +63,7 @@ def seed_destinations():
             
             if existing_tag:
                 tags_map[tag_name] = existing_tag
-                print(f"  ✓ Tag '{tag_name}' already exists")
+                logger.info("Tag '%s' already exists", tag_name)
             else:
                 # Create new tag with full data from JSON
                 new_tag = Tag(
@@ -72,15 +74,19 @@ def seed_destinations():
                 db.add(new_tag)
                 db.flush()  # Flush to get the tag ID
                 tags_map[tag_name] = new_tag
-                print(f"  + Created tag: {tag_name} - {tag_data.get('description')}")
+                # logger.info(
+                #     "Created tag: %s - %s",
+                #     tag_name,
+                #     tag_data.get('description')
+                # )
         
         # Commit tags first
         db.commit()
-        print(f"✓ Tags seeded successfully!\n")
+        logger.info("Tags seeded successfully.")
         
         # Now seed locations
         locations_data = data.get('locations', [])
-        print(f"Loading {len(locations_data)} locations...")
+        logger.info("Loading %s locations...", len(locations_data))
         
         for loc_data in locations_data:
             # Check if location already exists
@@ -89,7 +95,7 @@ def seed_destinations():
             ).first()
             
             if existing_location:
-                print(f"  ✓ Location '{loc_data['name']}' already exists, skipping...")
+                logger.info("Location '%s' already exists, skipping...", loc_data['name'])
                 continue
             
             # Get tags for this location from the pre-created tags_map
@@ -110,15 +116,19 @@ def seed_destinations():
             )
             
             db.add(location)
-            print(f"  + Added location: {loc_data['name']} with {len(tags)} tags")
+            # logger.info(
+            #     "Added location: %s with %s tags",
+            #     loc_data['name'],
+            #     len(tags)
+            # )
         
         # Commit all changes
         db.commit()
-        print("\n✓ Database seeded successfully!")
+        logger.info("Database seeded successfully.")
         
     except Exception as e:
         db.rollback()
-        print(f"✗ Error during seeding: {e}")
+        logger.exception("Error during seeding: %s", e)
         raise
     finally:
         db.close()

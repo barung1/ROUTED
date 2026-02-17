@@ -1,6 +1,8 @@
 from logging import Logger
+import select
 from typing import Generator
 from backend.config.env_vars import load_env_variables
+from backend.models.location import Location
 import sqlalchemy
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker, Session
@@ -67,9 +69,9 @@ inspector = sqlalchemy.inspect(engine)
 expected_tables = set(Base.metadata.tables.keys())
 existing_tables = set(inspector.get_table_names())
 missing_tables = expected_tables - existing_tables
-Base.metadata.create_all(bind=engine)
 
 if missing_tables:
+	Base.metadata.create_all(bind=engine)
 	logger.info(
 		"Database tables created on startup: %s",
 		", ".join(sorted(missing_tables)),
@@ -77,8 +79,34 @@ if missing_tables:
 else:
 	logger.info("Database tables already existed on startup")
 
+locations_populated = False
+try:
+	with engine.connect() as connection:
+		from backend.models.location import Location
+		result = connection.execute(text("SELECT COUNT(*) FROM locations"))
+		count = result.scalar()
+		if count and count > 0:
+			locations_populated = True
+except Exception as e:
+	logger.error(f"Failed to check locations population: {e}")
+
+if not locations_populated:
+	from backend.scripts.seed_destinations import seed_destinations
+	try:
+		seed_destinations()
+		logger.info("Locations table seeded successfully")
+	except Exception as e:
+		logger.error(f"Failed to seed locations: {e}")
+
 if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
 	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
 	Base.metadata.drop_all(bind=engine)
 	Base.metadata.create_all(bind=engine)
 	logger.info("Database tables created successfully")
+	try:
+		from backend.scripts.seed_destinations import seed_destinations
+		seed_destinations()
+		logger.info("Locations table seeded successfully after reset")
+	except Exception as e:
+		logger.error(f"Failed to seed locations after reset: {e}")
+	# seed_destinations()
