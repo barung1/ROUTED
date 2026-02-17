@@ -22,8 +22,8 @@ router = APIRouter()
 loaded_env = load_env_variables()
 logger = get_logger(__name__)
 
-logger.info("Loaded environment variables for user routes" if loaded_env else "Failed to load environment variables for user routes")
-logger.info(f"Environment variables DEV_MODE:{os.getenv('DEV_MODE', 'False')}")
+# logger.info("Loaded environment variables for user routes" if loaded_env else "Failed to load environment variables for user routes")
+# logger.info(f"Environment variables DEV_MODE:{os.getenv('DEV_MODE', 'False')}")
 
 def _valid_password(password: str) -> bool:
 	if len(password) < 8:
