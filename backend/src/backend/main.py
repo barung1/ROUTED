@@ -32,7 +32,7 @@ app.include_router(user_router, prefix="/users", tags=["Users"])
 )
 def health(db: Session = Depends(get_db_session)):
 	try:
-		db.execute(text("SELECT 1"))
+		db.execute(text("SELECT 2"))
 		db_status = "connected"
 	except Exception as e:
 		logger.error(f"Database health check failed: {e}")
