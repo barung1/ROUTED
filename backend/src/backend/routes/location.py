@@ -1,7 +1,4 @@
-from ast import stmt
-from turtle import shape
 from uuid import UUID
-from venv import logger
 from backend.api_models.location import LocationPublicModel
 import backend.config.db as db 
 from fastapi import APIRouter, Depends, HTTPException, status
