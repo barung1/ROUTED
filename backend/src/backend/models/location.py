@@ -25,10 +25,10 @@ class Location(Base):
 		server_default=text("gen_random_uuid()"),
 	)
 	name: Mapped[str] = mapped_column(nullable=False)
-	position: Mapped[str] = mapped_column(
+	position: Mapped[object] = mapped_column(
 		Geography(geometry_type='POINT', srid=4326,spatial_index=True)
 		,nullable=False)
-	tags: Mapped[list["Tag"]] = relationship(
+	tags: Mapped[list[Tag]] = relationship(
 		"Tag",
 		secondary=location_tags,
 		back_populates="locations",

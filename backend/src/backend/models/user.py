@@ -1,4 +1,5 @@
 # User model definition
+from datetime import date
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 from sqlalchemy import String, text
@@ -9,7 +10,6 @@ from backend.models.associations import user_trips
 
 if TYPE_CHECKING:
 	from backend.models.trip import Trip
-	
 
 class User(Base):
 	__tablename__ = 'users'
@@ -31,5 +31,7 @@ class User(Base):
 		secondary=user_trips,
 		back_populates="user",
 	)
+	date_joined:Mapped[date] = mapped_column(nullable=False, server_default=text("CURRENT_DATE"))
+	date_of_birth: Mapped[date] = mapped_column(nullable=True)
 
 
