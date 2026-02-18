@@ -29,6 +29,9 @@ backend-image:
     - when: manual
       allow_failure: false
   script:
+    - echo "DOCKER_HOST=$DOCKER_HOST"
+    - env | grep DOCKER
+    - docker info
     - DEP_HASH=$(cat backend/pyproject.toml backend/poetry.lock | sha256sum | cut -d' ' -f1 | cut -c1-12)
     - BACKEND_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-backend:deps-$DEP_HASH"
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_JOB_TOKEN" "$REGISTRY_URL"
@@ -170,4 +173,43 @@ userRoutes-tests:
     - pg_isready -h postgres -p 5432
     - mkdir -p ../test-reports
     - PYTHONPATH=../src pytest test_user_routes.py test_jwt_auth.py -q --maxfail=2 --junitxml=../test-reports/userRoutes.xml
+
+locationRoutes-tests:
+  stage: test
+  image:
+    name: $BACKEND_IMAGE
+    pull_policy: always
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - backend/**/*
+      when: never
+    - changes:
+        - backend/src/backend/routes/location.py
+        - backend/tests/test_location_routes.py
+  services:
+    - name: $POSTGIS_IMAGE
+      alias: postgres
+      pull_policy: if-not-present
+      variables:
+        POSTGRES_USER: routed_user
+        POSTGRES_PASSWORD: routed_password
+        POSTGRES_DB: routed_test
+  cache:
+    key: poetry-${CI_COMMIT_REF_SLUG}
+    paths:
+      - .cache/pip
+      - .cache/pypoetry
+  artifacts:
+    when: always
+    paths:
+      - backend/test-reports/
+    reports:
+      junit: backend/test-reports/locationRoutes.xml
+  script:
+    - cd backend/tests
+    - for i in $(seq 1 60); do pg_isready -h postgres -p 5432 && break; sleep 1; done
+    - pg_isready -h postgres -p 5432
+    - mkdir -p ../test-reports
+    - PYTHONPATH=../src pytest test_location_routes.py -q --maxfail=3 --junitxml=../test-reports/locationRoutes.xml
 
