@@ -43,9 +43,6 @@ def seed_destinations():
     if data is None:
         return
     
-    # Create tables if they don't exist
-    Base.metadata.create_all(bind=engine)
-    
     # Get database session
     db = next(get_db_session())
     

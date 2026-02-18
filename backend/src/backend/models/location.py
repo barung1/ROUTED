@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 from backend.models.Base import Base
 from backend.models.associations import location_tags
-from geoalchemy2 import Geography
+from geoalchemy2 import Geography, WKBElement
 from sqlalchemy import String, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -25,10 +25,10 @@ class Location(Base):
 		server_default=text("gen_random_uuid()"),
 	)
 	name: Mapped[str] = mapped_column(nullable=False)
-	position: Mapped[str] = mapped_column(
+	position: Mapped[WKBElement] = mapped_column(
 		Geography(geometry_type='POINT', srid=4326,spatial_index=True)
 		,nullable=False)
-	tags: Mapped[list["Tag"]] = relationship(
+	tags: Mapped[list[Tag]] = relationship(
 		"Tag",
 		secondary=location_tags,
 		back_populates="locations",

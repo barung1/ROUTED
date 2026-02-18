@@ -16,13 +16,21 @@ FastAPI backend for the Routed project. Provides REST endpoints, authentication,
 
 ```
 backend/
+├── data/                # Seed data and JSON fixtures
+├── logs/                # Local log output
+├── migrations/          # Alembic migrations
 ├── src/
 │   └── backend/
-│       ├── main.py          # FastAPI application
-│       ├── config/          # DB and env configuration
-│       ├── models/          # SQLAlchemy models
-│       └── routes/          # API routes
-└── tests/                   # Pytest suite
+│       ├── api_models/  # Pydantic API schemas
+│       ├── auth/        # JWT helpers
+│       ├── config/      # DB and env configuration
+│       ├── loggers/     # Logging setup
+│       ├── models/      # SQLAlchemy models
+│       ├── routes/      # API routes
+│       ├── scripts/     # Local scripts (seed, guidance)
+│       ├── main.py      # FastAPI application
+│       └── run.py       # App entrypoint
+└── tests/               # Pytest suite
 ```
 
 ## Setup
