@@ -31,18 +31,26 @@ Many individuals plan trips at random dates due to hybrid work and academic sche
 
 ```
 Routed/
-├── backend/          # FastAPI backend server
+├── backend/                 # FastAPI backend server
+│   ├── data/                # Seed data and JSON fixtures
+│   ├── migrations/          # Alembic migrations
 │   ├── src/
 │   │   └── backend/
-│   │       ├── main.py           # FastAPI application
-│   │       ├── config/           # DB configuration
-│   │       └── models/           # SQLAlchemy models
-│   └── tests/        # Backend tests
-├── frontend/         # React + TypeScript frontend
+│   │       ├── api_models/  # Pydantic API schemas
+│   │       ├── auth/        # JWT helpers
+│   │       ├── config/      # DB and env configuration
+│   │       ├── loggers/     # Logging setup
+│   │       ├── models/      # SQLAlchemy models
+│   │       ├── routes/      # FastAPI routers
+│   │       ├── scripts/     # Local scripts (seed, guidance)
+│   │       ├── main.py      # FastAPI application
+│   │       └── run.py       # App entrypoint
+│   └── tests/               # Backend tests
+├── env/                     # Local .env (not committed)
+├── frontend/                # React + TypeScript frontend
 │   └── src/
-├── env/              # Local .env (not committed)
-├── UML/              # UML diagrams
-└── project docs/     # Project documentation
+├── UML/                     # UML diagrams
+└── project docs/            # Project documentation
 ```
 
 ## Getting Started
