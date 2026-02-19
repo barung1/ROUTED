@@ -22,7 +22,10 @@ def _delete_user(username: str = "", email: str = "") -> None:
 		).scalars().first()
 		if user:
 			session.delete(user)
+			session.flush()
 			session.commit()
+	except Exception:
+		session.rollback()
 	finally:
 		session.close()
 
