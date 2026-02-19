@@ -70,12 +70,17 @@ def list_my_trips(
 
 
 @router.get("/{trip_id}", response_model=TripPublicModel)
-def get_trip_by_id(trip_id: UUID, db: Session = Depends(get_db_session)) -> TripPublicModel:
+def get_trip_by_id(trip_id: UUID,used_id:UUID=Depends(get_current_user_id), db: Session = Depends(get_db_session)) -> TripPublicModel:
 	trip = db.execute(select(Trip).where(Trip.id == trip_id)).scalars().first()
 	if not trip:
 		raise HTTPException(
 			status_code=status.HTTP_404_NOT_FOUND,
 			detail="Trip not found",
+		)
+	if not trip.user or trip.user.id != used_id:
+		raise HTTPException(
+			status_code=status.HTTP_403_FORBIDDEN,
+			detail="Not authorized to view this trip",
 		)
 	return _to_public(trip)
 
