@@ -6,7 +6,7 @@ from backend.models.user import User  # noqa: F401
 from backend.models.tag import Tag  # noqa: F401
 from backend.models.location import Location  # noqa: F401
 from backend.models.trip import Trip  # noqa: F401
-from backend.models.associations import *  # noqa: F401, F403
+from backend.models.associations import *  # type: ignore # noqa: F401, F403
 from tests.conftest import get_table_name
 
 
