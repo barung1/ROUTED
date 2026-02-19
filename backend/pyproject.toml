@@ -26,6 +26,7 @@ packages = [{ include = "backend", from = "src" }]
 [tool.poetry.scripts]
 dev = "backend.run:dev"
 test = "pytest:main"
+resetDB = "backend.run:deleteRowsAndRemakeTables"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
