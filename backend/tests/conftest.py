@@ -1,3 +1,4 @@
+
 """
 Test configuration and fixtures.
 
@@ -27,6 +28,13 @@ from backend.models.user import User
 # Test database URL
 TEST_DATABASE_URL = f"postgresql+psycopg://{os.getenv('POSTGRES_USER', 'routed_user')}:{os.getenv('POSTGRES_PASSWORD', 'routed_password')}@{os.getenv('POSTGRES_HOST', 'localhost')}:{os.getenv('POSTGRES_PORT', '5432')}/{os.getenv('POSTGRES_DB', 'routed_test')}"
 
+def get_table_name(table_key: str) -> str:
+    """Get the full table name including schema prefix if present."""
+    for key in Base.metadata.tables.keys():
+        # Handle both schema-qualified names (e.g., "routed.users") and bare names
+        if key.endswith(f".{table_key}") or key == table_key:
+            return key
+    raise KeyError(f"Table '{table_key}' not found in metadata")
 
 @pytest.fixture(scope="session")
 def test_engine() -> Generator[Engine, None, None]:

@@ -14,6 +14,10 @@ logger: Logger = get_logger(__name__)
 
 loaded_env = load_env_variables()
 
+if not loaded_env:
+	logger.warning("Environment variables may not have loaded correctly. Check .env file and load_env_variables function.")
+else:
+	logger.debug("Environment variables loaded successfully.\nhost: %s",os.getenv('POSTGRES_HOST', 'Not set'))
 # Database URL from environment or construct from individual vars
 DATABASE_URL = sqlalchemy.engine.URL.create(
 	drivername="postgresql+psycopg",
@@ -21,14 +25,15 @@ DATABASE_URL = sqlalchemy.engine.URL.create(
 	password=os.getenv('POSTGRES_PASSWORD', 'routed_password'),
 	host=os.getenv('POSTGRES_HOST', '127.0.0.1'),
 	port=int(os.getenv('POSTGRES_PORT', '5432')),
-	database=os.getenv('POSTGRES_DB', 'routed')
+	database=os.getenv('POSTGRES_DB', 'postgres'),
 )
+logger.info(f"Database engine created with URL: {DATABASE_URL}")
 
 # Create engine with connection pooling
-engine = sqlalchemy.create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = sqlalchemy.create_engine(DATABASE_URL, pool_pre_ping=True,
+		connect_args={"options": f"-csearch_path=public,{os.getenv('DB_SCHEMA', 'routed')}"})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-logger.info(f"Database engine created with URL: {DATABASE_URL}")
 
 
 def _load_models() -> None:
@@ -37,14 +42,17 @@ def _load_models() -> None:
 
 
 def _ensure_postgres_dependencies() -> None:
-	"""Ensure PostGIS is enabled for geography types."""
-	try:
-		with engine.connect() as connection:
-			connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
-			connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
-			connection.commit()
-	except Exception as e:
-		logger.warning(f"Could not connect to database to set up extensions: {e}. Skipping. Tables will not auto-create until DB is available.")
+	"""Ensure schema and PostGIS extension are available."""
+	db_schema = os.getenv('DB_SCHEMA', 'routed')
+	with engine.connect() as connection:
+		# Create schema if it doesn't exist
+		connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {db_schema}"))
+		connection.commit()
+	with engine.connect() as connection:
+		# Create extensions in public schema (globally available)
+		connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+		connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+		connection.commit()
 
 def get_db_session() -> Generator[Session, None, None]:
 	"""
@@ -86,7 +94,10 @@ locations_populated = False
 try:
 	with engine.connect() as connection:
 		from backend.models.location import Location
-		result = connection.execute(text("SELECT COUNT(*) FROM locations"))
+		import sqlalchemy
+		from sqlalchemy import select, func
+		stmt = select(func.count(Location.id))
+		result = connection.execute(stmt)
 		count = result.scalar()
 		if count and count > 0:
 			locations_populated = True
