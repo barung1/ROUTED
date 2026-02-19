@@ -159,7 +159,6 @@ def update_trip(
 		
 		# Validate date range after all updates applied
 		_validate_date_range(trip.start_date, trip.end_date)
-		
 		db.commit()
 		db.refresh(trip)
 		return _to_public(trip)
