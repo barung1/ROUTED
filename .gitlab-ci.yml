@@ -27,8 +27,6 @@ backend-image:
         - backend/pyproject.toml
         - backend/poetry.lock
         - .gitlab-ci.yml
-    - when: manual
-      allow_failure: false
   script:
     - echo "DOCKER_HOST=$DOCKER_HOST"
     - env | grep DOCKER
@@ -50,8 +48,6 @@ postgis-image:
         - backend/Dockerfile.postgis
         - .gitlab-ci.yml
       when: on_success
-    - when: manual
-      allow_failure: false
   script:
     - DOCKERFILE_HASH=$(cat backend/Dockerfile.postgis | sha256sum | cut -d' ' -f1 | cut -c1-12)
     - POSTGIS_IMAGE_HASH="$REGISTRY_URL/h3sood/routed/routed-postgis:dockerfile-$DOCKERFILE_HASH"
