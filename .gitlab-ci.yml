@@ -10,6 +10,7 @@ variables:
   POSTGRES_DB: routed_test
   POSTGRES_HOST: postgres
   POSTGRES_PORT: '5432'
+  DB_SCHEMA: routed
   RESET_DB_ON_STARTUP: 'false'
   REGISTRY_URL: "git.uwaterloo.ca:5050"
   BACKEND_IMAGE: "$REGISTRY_URL/h3sood/routed/routed-backend:latest"
@@ -76,10 +77,6 @@ backend-tests:
     - name: $POSTGIS_IMAGE
       alias: postgres
       pull_policy: if-not-present
-      variables:
-        POSTGRES_USER: routed_user
-        POSTGRES_PASSWORD: routed_password
-        POSTGRES_DB: routed_test
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
     paths:
@@ -114,10 +111,6 @@ model_tests:
     - name: $POSTGIS_IMAGE
       alias: postgres
       pull_policy: if-not-present
-      variables:
-        POSTGRES_USER: routed_user
-        POSTGRES_PASSWORD: routed_password
-        POSTGRES_DB: routed_test
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
     paths:
@@ -152,10 +145,6 @@ userRoutes-tests:
     - name: $POSTGIS_IMAGE
       alias: postgres
       pull_policy: if-not-present
-      variables:
-        POSTGRES_USER: routed_user
-        POSTGRES_PASSWORD: routed_password
-        POSTGRES_DB: routed_test
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
     paths:
@@ -191,10 +180,6 @@ locationRoutes-tests:
     - name: $POSTGIS_IMAGE
       alias: postgres
       pull_policy: if-not-present
-      variables:
-        POSTGRES_USER: routed_user
-        POSTGRES_PASSWORD: routed_password
-        POSTGRES_DB: routed_test
   cache:
     key: poetry-${CI_COMMIT_REF_SLUG}
     paths:
