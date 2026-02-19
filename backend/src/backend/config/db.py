@@ -91,7 +91,10 @@ locations_populated = False
 try:
 	with engine.connect() as connection:
 		from backend.models.location import Location
-		result = connection.execute(text("SELECT COUNT(*) FROM locations"))
+		import sqlalchemy
+		from sqlalchemy import select, func
+		stmt = select(func.count(Location.id))
+		result = connection.execute(stmt)
 		count = result.scalar()
 		if count and count > 0:
 			locations_populated = True
