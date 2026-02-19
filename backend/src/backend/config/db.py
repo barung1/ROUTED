@@ -31,7 +31,7 @@ logger.info(f"Database engine created with URL: {DATABASE_URL}")
 
 # Create engine with connection pooling
 engine = sqlalchemy.create_engine(DATABASE_URL, pool_pre_ping=True,
-		connect_args={"options": f"-csearch_path={os.getenv('DB_SCHEMA', 'routed')}"})
+		connect_args={"options": f"-csearch_path=public,{os.getenv('DB_SCHEMA', 'routed')}"})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -48,6 +48,7 @@ def _ensure_postgres_dependencies() -> None:
 		# Create schema if it doesn't exist
 		connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {db_schema}"))
 		connection.commit()
+	with engine.connect() as connection:
 		# Create extensions in public schema (globally available)
 		connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
 		connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
