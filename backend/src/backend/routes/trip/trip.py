@@ -1,3 +1,4 @@
+import datetime
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -45,8 +46,8 @@ def _to_public(trip: Trip) -> TripPublicModel:
 		id=trip.id,
 		userId=trip.user.id if trip.user else None,
 		locationId=trip.location_id,
-		startDate=trip.start_date.isoformat() if trip.start_date else None,
-		endDate=trip.end_date.isoformat() if trip.end_date else None,
+		startDate=trip.start_date.isoformat() if trip.start_date else "",
+		endDate=trip.end_date.isoformat() if trip.end_date else "",
 		status=trip.status,
 	)
 
@@ -147,9 +148,9 @@ def update_trip(
 				)
 			trip.location_id = update.locationId
 		if update.startDate is not None:
-			trip.start_date = update.startDate
+			trip.start_date = datetime.datetime.fromisoformat(update.startDate)
 		if update.endDate is not None:
-			trip.end_date = update.endDate
+			trip.end_date = datetime.datetime.fromisoformat(update.endDate)
 		if update.status is not None:
 			# Status transitions: All transitions are currently allowed.
 			# To enforce business rules (e.g., COMPLETED → PLANNED not allowed),
