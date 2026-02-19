@@ -1,5 +1,6 @@
 import subprocess
 import sys
+from venv import logger
 import uvicorn
 from backend.loggers.logger import get_logger # type: ignore
 

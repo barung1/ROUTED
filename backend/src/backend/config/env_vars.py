@@ -10,6 +10,7 @@ env_file_path = os.path.join(pathlib.Path(__file__).parent.parent.parent.parent.
 
 loaded_env:bool = False
 
+env_file_path = os.path.join(pathlib.Path(__file__).parent.parent.parent.parent.parent, 'env', '.env')
 def load_env_variables() -> bool:
 	global loaded_env
 	if loaded_env:
