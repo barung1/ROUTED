@@ -14,6 +14,10 @@ logger: Logger = get_logger(__name__)
 
 loaded_env = load_env_variables()
 
+if not loaded_env:
+	logger.warning("Environment variables may not have loaded correctly. Check .env file and load_env_variables function.")
+else:
+	logger.debug("Environment variables loaded successfully.\nhost: %s",os.getenv('POSTGRES_HOST', 'Not set'))
 # Database URL from environment or construct from individual vars
 DATABASE_URL = sqlalchemy.engine.URL.create(
 	drivername="postgresql+psycopg",
@@ -21,14 +25,15 @@ DATABASE_URL = sqlalchemy.engine.URL.create(
 	password=os.getenv('POSTGRES_PASSWORD', 'routed_password'),
 	host=os.getenv('POSTGRES_HOST', '127.0.0.1'),
 	port=int(os.getenv('POSTGRES_PORT', '5432')),
-	database=os.getenv('POSTGRES_DB', 'routed')
+	database=os.getenv('POSTGRES_DB', 'postgres'),
 )
+logger.info(f"Database engine created with URL: {DATABASE_URL}")
 
 # Create engine with connection pooling
-engine = sqlalchemy.create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = sqlalchemy.create_engine(DATABASE_URL, pool_pre_ping=True,
+		connect_args={"options": f"-csearch_path={os.getenv('DB_SCHEMA', 'routed')}"})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-logger.info(f"Database engine created with URL: {DATABASE_URL}")
 
 
 def _load_models() -> None:
