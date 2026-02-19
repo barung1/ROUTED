@@ -73,10 +73,29 @@ _load_models()
 _ensure_postgres_dependencies()
 # Ensure tables exist in all environments and log status.
 try:
-	inspector = sqlalchemy.inspect(engine)
-	expected_tables = set(Base.metadata.tables.keys())
-	existing_tables = set(inspector.get_table_names())
-	missing_tables = expected_tables - existing_tables
+	with engine.connect() as connection:
+		from backend.models.location import Location
+		import sqlalchemy
+		from sqlalchemy import select, func
+		stmt = select(func.count(Location.id))
+		result = connection.execute(stmt)
+		count = result.scalar()
+		if count and count > 0:
+			locations_populated = True
+except Exception as e:
+	logger.error(f"Failed to check locations population: {e}")
+
+if not locations_populated:
+	from backend.scripts.seed_destinations import seed_destinations
+	try:
+		seed_destinations()
+		logger.info("Locations table seeded successfully")
+	except Exception as e:
+		logger.error(f"Failed to seed locations: {e}")
+
+if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
+	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
+	Base.metadata.drop_all(bind=engine)
 	Base.metadata.create_all(bind=engine)
 
 	if missing_tables:
