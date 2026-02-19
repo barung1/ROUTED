@@ -42,8 +42,13 @@ def _load_models() -> None:
 
 
 def _ensure_postgres_dependencies() -> None:
-	"""Ensure PostGIS is enabled for geography types."""
+	"""Ensure schema and PostGIS extension are available."""
+	db_schema = os.getenv('DB_SCHEMA', 'routed')
 	with engine.connect() as connection:
+		# Create schema if it doesn't exist
+		connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {db_schema}"))
+		connection.commit()
+		# Create extensions in public schema (globally available)
 		connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
 		connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
 		connection.commit()
