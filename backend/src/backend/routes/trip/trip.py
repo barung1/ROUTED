@@ -18,8 +18,8 @@ def _to_public(trip: Trip) -> TripPublicModel:
 		id=trip.id,
 		userId=trip.user.id if trip.user else None,
 		locationId=trip.location_id,
-		startDate=trip.start_date,
-		endDate=trip.end_date,
+		startDate=trip.start_date.isoformat() if trip.start_date else None,
+		endDate=trip.end_date.isoformat() if trip.end_date else None,
 		status=trip.status,
 	)
 

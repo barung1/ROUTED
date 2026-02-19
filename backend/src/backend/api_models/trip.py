@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 from pydantic import BaseModel
 from backend.models.trip import TripStatus
