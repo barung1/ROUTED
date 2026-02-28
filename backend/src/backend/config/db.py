@@ -72,10 +72,9 @@ def get_db_session() -> Generator[Session, None, None]:
 _load_models()
 _ensure_postgres_dependencies()
 # Ensure tables exist in all environments and log status.
+locations_populated = False
 try:
 	with engine.connect() as connection:
-		from backend.models.location import Location
-		import sqlalchemy
 		from sqlalchemy import select, func
 		stmt = select(func.count(Location.id))
 		result = connection.execute(stmt)
@@ -83,33 +82,21 @@ try:
 		if count and count > 0:
 			locations_populated = True
 except Exception as e:
-	logger.error(f"Failed to check locations population: {e}")
+	logger.warning(f"Failed to check locations population: {e}")
 
 if not locations_populated:
-	from backend.scripts.seed_destinations import seed_destinations
 	try:
+		from backend.scripts.seed_destinations import seed_destinations
 		seed_destinations()
 		logger.info("Locations table seeded successfully")
 	except Exception as e:
-		logger.error(f"Failed to seed locations: {e}")
+		logger.warning(f"Failed to seed locations: {e}")
 
 if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
-	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
-	Base.metadata.drop_all(bind=engine)
-	Base.metadata.create_all(bind=engine)
-
-	if missing_tables:
-		logger.info(
-			"Database tables created on startup: %s",
-			", ".join(sorted(missing_tables)),
-		)
-	else:
-		logger.info("Database tables already existed on startup")
-
-	if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
+	try:
 		logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
 		Base.metadata.drop_all(bind=engine)
 		Base.metadata.create_all(bind=engine)
 		logger.info("Database tables created successfully")
-except Exception as e:
-	logger.warning(f"Could not initialize database tables on startup: {e}. Tables will be created when database becomes available.")
+	except Exception as e:
+		logger.warning(f"Could not reset database tables on startup: {e}")
