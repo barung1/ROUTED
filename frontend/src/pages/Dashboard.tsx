@@ -68,7 +68,14 @@ const Dashboard: React.FC = () => {
   }
 
   const handleCreateTrip = () => {
-    console.log('Creating trip:', tripForm)
+    const newTrip = {
+      id: crypto.randomUUID(),
+      ...tripForm,
+      status: 'planned' as const,
+    }
+    const existing = JSON.parse(localStorage.getItem('routed_my_trips') || '[]')
+    localStorage.setItem('routed_my_trips', JSON.stringify([newTrip, ...existing]))
+    console.log('Trip created:', newTrip)
     setTripForm({ ...emptyForm })
     setTripFormOpen(false)
   }
@@ -88,7 +95,7 @@ const Dashboard: React.FC = () => {
           {/* Right actions */}
           <div className="flex items-center gap-3">
             <Link
-              to="/trips"
+              to="/explore"
               className="bg-indigo-600 text-white px-5 py-2 rounded-full shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all text-sm font-semibold tracking-wide"
             >
               Explore Trips

@@ -17,7 +17,7 @@ const Header: React.FC = () => {
           </div>
            {/* Explore Trips fixed button (top-right) */}
             <Link
-              to="/trips"
+              to="/explore"
               aria-label="Explore Trips"
               className="fixed top-13 right-20 z-50 bg-indigo-600 text-white px-3 py-2 rounded-lg shadow-lg hover:bg-indigo-700 transition focus:outline-none focus:ring-2 focus:ring-indigo-300"
             >

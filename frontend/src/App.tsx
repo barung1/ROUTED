@@ -4,6 +4,7 @@ import Landing from './components/Landing'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Trips from './pages/Trips'
+import Explore from './pages/Explore'
 import Dashboard from './pages/Dashboard'
 import Suggestions from './pages/Suggestions'
 import Matches from './pages/Matches'
@@ -21,6 +22,7 @@ const App: React.FC = () => {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/trips" element={<Trips />} />
+            <Route path="/explore" element={<Explore />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/suggestions" element={<Suggestions />} />
             <Route path="/matches" element={<Matches />} />
