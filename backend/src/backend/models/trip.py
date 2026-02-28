@@ -34,9 +34,13 @@ class Trip(Base):
 		back_populates="trips",
 		uselist=False,
 	)
-	start_date:Mapped[date] = mapped_column(nullable=False)
-	end_date:Mapped[date] = mapped_column(nullable=False)
-	status:Mapped[TripStatus] = mapped_column(nullable=False,default=TripStatus.PLANNED)
+	start_date:Mapped[str] = mapped_column(nullable=False)
+	end_date:Mapped[str] = mapped_column(nullable=False)
+	status: Mapped[TripStatus] = mapped_column(
+		Enum(TripStatus, name="trip_status"),
+		nullable=False,
+		default=TripStatus.PLANNED,
+	)
 	location_id: Mapped[UUID] = mapped_column(
 		PGUUID(as_uuid=True),
 		ForeignKey("locations.id"),

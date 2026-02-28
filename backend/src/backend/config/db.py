@@ -74,7 +74,6 @@ def get_db_session() -> Generator[Session, None, None]:
 # Ensure models are registered for relationships (even when not resetting DB).
 _load_models()
 _ensure_postgres_dependencies()
-
 # Ensure tables exist in all environments and log status.
 inspector = sqlalchemy.inspect(engine)
 expected_tables = set(Base.metadata.tables.keys())

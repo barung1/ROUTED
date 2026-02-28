@@ -10,6 +10,7 @@ from backend.loggers.logger import get_logger # type: ignore
 from backend.routes.user.user import router as user_router
 from backend.routes.trip.trip import router as trip_router
 from backend.routes.location import router as location_router
+from fastapi.middleware.cors import CORSMiddleware
 
 logger = get_logger(__name__, "app.log")
 
@@ -22,6 +23,20 @@ app = FastAPI(
 )
 
 logger.info("FastAPI application created successfully")
+
+# Allow Vite dev server to access the API during development
+origins = [
+	"http://localhost:5173",
+	"http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+	CORSMiddleware,
+	allow_origins=origins,
+	allow_credentials=True,
+	allow_methods=["*"],
+	allow_headers=["*"],
+)
 
 app.include_router(user_router, prefix="/users", tags=["Users"])
 app.include_router(trip_router, prefix="/trips", tags=["Trips"])
