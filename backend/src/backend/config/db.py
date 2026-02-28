@@ -31,7 +31,7 @@ logger.info(f"Database engine created with URL: {DATABASE_URL}")
 
 # Create engine with connection pooling
 engine = sqlalchemy.create_engine(DATABASE_URL, pool_pre_ping=True,
-		connect_args={"options": f"-csearch_path={os.getenv('DB_SCHEMA', 'routed')}"})
+		connect_args={"options": f"-csearch_path=public,{os.getenv('DB_SCHEMA', 'routed')}"})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
@@ -42,14 +42,17 @@ def _load_models() -> None:
 
 
 def _ensure_postgres_dependencies() -> None:
-	"""Ensure PostGIS is enabled for geography types."""
-	try:
-		with engine.connect() as connection:
-			connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
-			connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
-			connection.commit()
-	except Exception as e:
-		logger.warning(f"Could not connect to database to set up extensions: {e}. Skipping. Tables will not auto-create until DB is available.")
+	"""Ensure schema and PostGIS extension are available."""
+	db_schema = os.getenv('DB_SCHEMA', 'routed')
+	with engine.connect() as connection:
+		# Create schema if it doesn't exist
+		connection.execute(text(f"CREATE SCHEMA IF NOT EXISTS {db_schema}"))
+		connection.commit()
+	with engine.connect() as connection:
+		# Create extensions in public schema (globally available)
+		connection.execute(text("CREATE EXTENSION IF NOT EXISTS postgis"))
+		connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+		connection.commit()
 
 def get_db_session() -> Generator[Session, None, None]:
 	"""
@@ -72,9 +75,25 @@ def get_db_session() -> Generator[Session, None, None]:
 _load_models()
 _ensure_postgres_dependencies()
 # Ensure tables exist in all environments and log status.
+inspector = sqlalchemy.inspect(engine)
+expected_tables = set(Base.metadata.tables.keys())
+existing_tables = set(inspector.get_table_names())
+missing_tables = expected_tables - existing_tables
+
+if missing_tables:
+	Base.metadata.create_all(bind=engine)
+	logger.info(
+		"Database tables created on startup: %s",
+		", ".join(sorted(missing_tables)),
+	)
+else:
+	logger.info("Database tables already existed on startup")
+
 locations_populated = False
 try:
 	with engine.connect() as connection:
+		from backend.models.location import Location
+		import sqlalchemy
 		from sqlalchemy import select, func
 		stmt = select(func.count(Location.id))
 		result = connection.execute(stmt)
@@ -82,21 +101,25 @@ try:
 		if count and count > 0:
 			locations_populated = True
 except Exception as e:
-	logger.warning(f"Failed to check locations population: {e}")
+	logger.error(f"Failed to check locations population: {e}")
 
 if not locations_populated:
+	from backend.scripts.seed_destinations import seed_destinations
 	try:
-		from backend.scripts.seed_destinations import seed_destinations
 		seed_destinations()
 		logger.info("Locations table seeded successfully")
 	except Exception as e:
-		logger.warning(f"Failed to seed locations: {e}")
+		logger.error(f"Failed to seed locations: {e}")
 
 if os.getenv('RESET_DB_ON_STARTUP', 'False').lower() in ('true', '1', 'yes'):
+	logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
+	Base.metadata.drop_all(bind=engine)
+	Base.metadata.create_all(bind=engine)
+	logger.info("Database tables created successfully")
 	try:
-		logger.warning("RESET_DB_ON_STARTUP is enabled. Dropping and recreating all tables!")
-		Base.metadata.drop_all(bind=engine)
-		Base.metadata.create_all(bind=engine)
-		logger.info("Database tables created successfully")
+		from backend.scripts.seed_destinations import seed_destinations
+		seed_destinations()
+		logger.info("Locations table seeded successfully after reset")
 	except Exception as e:
-		logger.warning(f"Could not reset database tables on startup: {e}")
+		logger.error(f"Failed to seed locations after reset: {e}")
+	# seed_destinations()
