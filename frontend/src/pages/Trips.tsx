@@ -118,7 +118,7 @@ const Trips: React.FC = () => {
 
   /* ── Tab config ── */
   const tabs = [
-    { key: 'my-trips' as const, label: 'My Trips', emoji: '��', count: myTrips.length },
+    { key: 'my-trips' as const, label: 'My Trips', emoji: '💎', count: myTrips.length },
     { key: 'shortlisted' as const, label: 'Shortlisted', emoji: '⭐', count: shortlisted.length },
   ]
 
@@ -205,6 +205,7 @@ const Trips: React.FC = () => {
                   <div className="flex gap-3 justify-center">
                     <Link
                       to="/dashboard"
+                      state={{ openTripForm: true }}
                       className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-md hover:shadow-lg transition-all"
                     >
                       <span className="text-lg">+</span> Create a Trip
