@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+
+/* All Field Labels */
+.profile-label-username,
+.profile-label-email,
+.profile-label-location,
+.profile-label-interests,
+.profile-label-bio {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* All Field Values */
+.profile-value-username,
+.profile-value-email,
+.profile-value-location,
+.profile-value-interests,
+.profile-value-bio {
+  font-family: 'Poppins', sans-serif;
+}

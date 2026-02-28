@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import '../pages/login.css'
+import logo from '../assets/logo.png'
 import api from '../api/client'
 
 const Login: React.FC = () => {
@@ -66,7 +67,13 @@ const Login: React.FC = () => {
 
   return (
     <div className="login-container">
-      <div className="login-wrapper">
+      {/* Logo Header - Top Right */}
+      <div className="logo-header">
+        <img src={logo} alt="Routed logo" className="header-logo" />
+      </div>
+
+      {/* Main Content */}
+      <div className="login-content-wrapper">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
