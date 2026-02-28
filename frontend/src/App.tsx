@@ -6,6 +6,7 @@ import Signup from './pages/Signup'
 import Trips from './pages/Trips'
 import Explore from './pages/Explore'
 import Dashboard from './pages/Dashboard'
+import Profile from './pages/Profile'
 import Suggestions from './pages/Suggestions'
 import Matches from './pages/Matches'
 import Sidebar from './components/Sidebar'
@@ -24,6 +25,7 @@ const App: React.FC = () => {
             <Route path="/trips" element={<Trips />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<Profile />} />
             <Route path="/suggestions" element={<Suggestions />} />
             <Route path="/matches" element={<Matches />} />
           </Routes>

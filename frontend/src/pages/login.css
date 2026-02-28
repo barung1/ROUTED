@@ -5,6 +5,21 @@
   justify-content: center;
   background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
   padding: 1rem;
+  position: relative;
+}
+
+/* Logo Header */
+.logo-header {
+  position: absolute;
+  top: 1rem;
+  right: 2rem;
+  z-index: 10;
+}
+
+.header-logo {
+  height: 140px;
+  width: auto;
+  object-fit: contain;
 }
 
 .login-wrapper {
@@ -14,6 +29,20 @@
   max-width: 1000px;
   width: 100%;
   align-items: center;
+}
+
+.login-content-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  max-width: 1000px;
+  width: 100%;
+  align-items: center;
+}
+
+/* Signup page specific - move content down */
+.login-container.signup-container .login-content-wrapper {
+  margin-top: 3rem;
 }
 
 .login-box {

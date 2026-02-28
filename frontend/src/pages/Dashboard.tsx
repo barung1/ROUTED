@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import logo from '../assets/logo.png'
 
@@ -49,7 +49,17 @@ const Dashboard: React.FC = () => {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const tripFormRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
+  const location = useLocation()
   const greeting = getGreeting()
+
+  /* auto-open trip form when navigated from Trips page */
+  useEffect(() => {
+    if ((location.state as any)?.openTripForm) {
+      setTripFormOpen(true)
+      // clear the state so refreshing won't re-open the form
+      window.history.replaceState({}, '')
+    }
+  }, [location.state])
 
   /* close dropdowns on outside click */
   useEffect(() => {
@@ -61,7 +71,12 @@ const Dashboard: React.FC = () => {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
-  const handleLogout = () => { navigate('/') }
+  const handleLogout = () => {
+    localStorage.removeItem('routed_token')
+    localStorage.removeItem('routed_shortlisted')
+    localStorage.removeItem('routed_my_trips')
+    navigate('/')
+  }
 
   const handleTripField = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setTripForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
