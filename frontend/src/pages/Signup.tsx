@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import '../pages/login.css'
+import api from '../api/client'
 
 const Signup: React.FC = () => {
   const [firstName, setFirstName] = useState('')
@@ -39,14 +40,13 @@ const Signup: React.FC = () => {
         return
       }
 
-      // Simulated signup - replace with real authentication
-      console.log('Signup attempt:', { firstName, lastName, preferredFirstName, email, username, password })
-      
-      // On success, navigate to dashboard or login
-      // navigate('/dashboard')
-      setError('Signup endpoint not yet configured')
+  const payload = { firstName, lastName, email, username, password }
+  await api.post('/users/register', payload)
+  // on success, navigate to login
+  navigate('/login')
     } catch (err) {
-      setError('Unable to create account. Please try again.')
+  const message = (err as any)?.response?.data?.detail || 'Unable to create account. Please try again.'
+  setError(message)
     } finally {
       setLoading(false)
     }

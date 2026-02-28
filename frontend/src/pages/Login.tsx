@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import '../pages/login.css'
+import api from '../api/client'
 
 const Login: React.FC = () => {
   const [username, setUsername] = useState('')
@@ -21,20 +22,19 @@ const Login: React.FC = () => {
     setLoading(true)
 
     try {
-      // TODO: Replace with actual API call
       if (!username || !password) {
         setError('Please fill in all fields')
         return
       }
 
-      // Simulated login - replace with real authentication
-      console.log('Login attempt:', { username, password })
-      
-      // On success, navigate to dashboard
-      // navigate('/dashboard')
-      setError('Login endpoint not yet configured')
+      const resp = await api.post('/users/login', { usernameOrEmail: username, password })
+      localStorage.setItem('routed_token', resp.data.access_token)
+      // navigate to dashboard on success
+      navigate('/dashboard')
     } catch (err) {
-      setError('Invalid username or password')
+      // try to surface backend message
+      const message = (err as any)?.response?.data?.detail || 'Invalid username or password'
+      setError(message)
     } finally {
       setLoading(false)
     }
