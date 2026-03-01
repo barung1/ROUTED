@@ -125,7 +125,7 @@ def create_trip(
 		budget=trip.budget,
 		interests=trip.interests,
 		description=trip.description,
-		location_id=location_id,
+		location_id=trip.locationId,
 	)
 	new_trip.user = user
 	db.add(new_trip)
@@ -214,11 +214,6 @@ def update_trip(
 			detail="Trip not found",
 		)
 	_assert_trip_ownership(trip, user_id)
-	
-	# Track if status changed from PLANNED to something else
-	original_status = trip.status
-	status_changed_from_planned = False
-	
 	if update.locationId is not None:
 		location = db.execute(select(Location).where(Location.id == update.locationId)).scalars().first()
 		if not location:
@@ -249,13 +244,6 @@ def update_trip(
 		trip.description = update.description
 
 	_validate_date_range(trip.start_date, trip.end_date)
-	
-	# If status changed from PLANNED, remove existing matches
-	if status_changed_from_planned:
-		try:
-			MatchService.delete_matches_for_trip(trip_id, db)
-		except Exception as e:
-			print(f"Warning: Failed to delete matches: {e}")
 
 	db.commit()
 	db.refresh(trip)
@@ -285,12 +273,5 @@ def delete_trip(
 			detail="Trip not found",
 		)
 	_assert_trip_ownership(trip, user_id)
-	
-	# Delete all matches related to this trip
-	try:
-		MatchService.delete_matches_for_trip(trip_id, db)
-	except Exception as e:
-		print(f"Warning: Failed to delete matches: {e}")
-	
 	db.delete(trip)
 	db.commit()
