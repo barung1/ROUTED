@@ -95,6 +95,27 @@
       "longitude": -116.2266,
       "description": "Breathtaking glacial lake in Alberta with stunning mountain backdrop",
       "tags": ["nature", "mountains", "lakes", "hiking"]
+    },
+    {
+      "name": "Paris, France",
+      "latitude": 48.8566,
+      "longitude": 2.3522,
+      "description": "Popular among travelers with similar interests",
+      "tags": ["heritage", "iconic", "urban", "dining", "shopping"]
+    },
+    {
+      "name": "Tokyo, Japan",
+      "latitude": 35.6762,
+      "longitude": 139.6503,
+      "description": "Trending destination this season",
+      "tags": ["urban", "dining", "shopping", "entertainment", "nightlife"]
+    },
+    {
+      "name": "Cape Town, South Africa",
+      "latitude": -33.9249,
+      "longitude": 18.4241,
+      "description": "Great match for adventure seekers",
+      "tags": ["adventure", "nature", "scenic", "wildlife", "mountains"]
     }
   ]
 }
