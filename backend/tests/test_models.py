@@ -40,7 +40,19 @@ def test_locations_table_columns():
 
 def test_trips_table_columns():
 	table = Base.metadata.tables[get_table_name("trips")]
-	assert {"id", "start_date", "end_date", "status", "location_id"}.issubset(
+	assert {
+		"id",
+		"start_date",
+		"end_date",
+		"status",
+		"from_place",
+		"to_place",
+		"mode_of_travel",
+		"budget",
+		"interests",
+		"description",
+		"location_id",
+	}.issubset(
 		set(table.c.keys())
 	)
 	assert table.c.start_date.nullable is False
