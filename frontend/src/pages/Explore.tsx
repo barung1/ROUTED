@@ -110,14 +110,16 @@ const Explore: React.FC = () => {
         <div className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-12 -left-12 w-44 h-44 bg-white/10 rounded-full blur-2xl" />
 
-        <div className="max-w-6xl mx-auto relative">
+        <div className="max-w-6xl mx-auto relative text-center">
           <motion.div {...fadeUp(0)}>
-            <Link to="/dashboard" className="inline-flex items-center gap-2 text-indigo-200 hover:text-white text-sm font-medium mb-4 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-              Back to Dashboard
-            </Link>
+            {isLoggedIn() && (
+              <Link to="/dashboard" className="inline-flex items-center gap-2 text-indigo-200 hover:text-white text-sm font-medium mb-4 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                Back to Dashboard
+              </Link>
+            )}
             <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">🌍 Explore Trips</h1>
-            <p className="mt-2 text-indigo-200 text-sm md:text-base max-w-lg">
+            <p className="mt-2 text-indigo-200 text-sm md:text-base max-w-lg mx-auto">
               Discover amazing destinations around the world. Shortlist the ones you love and plan your next adventure.
             </p>
           </motion.div>

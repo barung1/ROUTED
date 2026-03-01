@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import React, { useState, useRef, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import logo from '../assets/logo.png'
 import './profile.css'
 
@@ -50,6 +50,9 @@ const INTEREST_OPTIONS = [
 /* ════════════════════════════════════════════════ */
 const Profile: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate()
+  const settingsRef = useRef<HTMLDivElement>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Profile state - will be fetched from backend
   const [profile, setProfile] = useState({
@@ -76,6 +79,22 @@ const Profile: React.FC = () => {
   const [showInterestDropdown, setShowInterestDropdown] = useState(false)
   const [showProfilePictureMenu, setShowProfilePictureMenu] = useState(false)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+
+  /* close settings dropdown on outside click */
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setSettingsOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('routed_token')
+    localStorage.removeItem('routed_shortlisted')
+    localStorage.removeItem('routed_my_trips')
+    navigate('/')
+  }
 
   const handleProfilePictureClick = () => {
     setShowProfilePictureMenu(true)
@@ -175,20 +194,84 @@ const Profile: React.FC = () => {
             <img src={logo} alt="Routed logo" className="h-35 w-auto object-contain" />
           </Link>
 
-          {/* Right actions */}
-          <button
-            type="button"
-            className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            aria-label="Settings"
-            title="Settings"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          </button>
+          {/* Right actions — Settings gear with dropdown */}
+          <div ref={settingsRef} className="relative">
+            <motion.button
+              type="button"
+              whileHover={{ rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+              onClick={() => setSettingsOpen((p) => !p)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300 ${
+                settingsOpen
+                  ? 'bg-white text-indigo-600 ring-2 ring-indigo-300'
+                  : 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white'
+              }`}
+              aria-label="Settings"
+              title="Settings"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </motion.button>
+
+            {/* Settings dropdown */}
+            <AnimatePresence>
+              {settingsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-200/60 py-2 z-50"
+                >
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/trips"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    My Trips
+                  </Link>
+                  <Link
+                    to="/explore"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+                    Explore
+                  </Link>
+                  <hr className="my-1.5 border-gray-100" />
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition rounded-lg mx-1 text-left"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
+
+      {/* ── Back to Dashboard ── */}
+      <div className="max-w-4xl mx-auto px-4 md:px-8 pt-4">
+        <Link to="/dashboard" className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium transition">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Back to Dashboard
+        </Link>
+      </div>
 
       {/* ═══════════ MAIN ═══════════ */}
       <main className="max-w-4xl mx-auto px-4 md:px-8 py-8">

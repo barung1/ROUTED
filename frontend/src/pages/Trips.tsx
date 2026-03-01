@@ -134,13 +134,13 @@ const Trips: React.FC = () => {
         <div className="max-w-6xl mx-auto relative">
           <motion.div {...fadeUp(0)}>
             <div className="flex items-start justify-between">
-              <div>
+              <div className="flex-1 text-center">
                 <Link to="/dashboard" className="inline-flex items-center gap-2 text-indigo-200 hover:text-white text-sm font-medium mb-4 transition">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                   Back to Dashboard
                 </Link>
                 <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Trips</h1>
-                <p className="mt-2 text-indigo-200 text-sm md:text-base max-w-lg">Manage your trips and view shortlisted destinations.</p>
+                <p className="mt-2 text-indigo-200 text-sm md:text-base max-w-lg mx-auto">Manage your trips and view shortlisted destinations.</p>
               </div>
 
               {/* Explore Trips button — same position as Landing & Dashboard */}

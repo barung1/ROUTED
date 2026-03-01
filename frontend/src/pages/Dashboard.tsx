@@ -163,12 +163,12 @@ const Dashboard: React.FC = () => {
 
         {/* ── Greeting banner ── */}
         <motion.div {...fadeUp(0)} className="mb-8">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 p-8 md:p-10 text-white shadow-xl">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 p-8 md:p-10 text-white shadow-xl text-center">
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
             <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/10 rounded-full blur-xl" />
             <p className="text-sm font-medium text-indigo-200 mb-1">{greeting.emoji} {greeting.text}</p>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Welcome back to Routed</h1>
-            {/* <p className="mt-2 text-indigo-100 text-sm md:text-base max-w-lg">Plan trips, find travel partners, and explore the world together.</p> */}
+            {/* <p className="mt-2 text-indigo-100 text-sm md:text-base max-w-lg mx-auto">Plan trips, find travel partners, and explore the world together.</p> */}
           </div>
         </motion.div>
 
