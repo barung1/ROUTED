@@ -89,6 +89,62 @@ if missing_tables:
 else:
 	logger.info("Database tables already existed on startup")
 
+
+def _ensure_trip_columns() -> None:
+	"""Add new trip columns for backward compatibility on existing databases."""
+	inspector_local = sqlalchemy.inspect(engine)
+	if "trips" not in inspector_local.get_table_names():
+		return
+
+	trip_columns = {column["name"] for column in inspector_local.get_columns("trips")}
+	missing_columns = []
+
+	with engine.connect() as connection:
+		connection.execute(
+			text(
+				"""
+				DO $$
+				BEGIN
+					IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'travel_mode') THEN
+						CREATE TYPE travel_mode AS ENUM (
+							'flight', 'train', 'bus', 'car', 'ship', 'bicycle', 'walking', 'other'
+						);
+					END IF;
+				END
+				$$;
+				"""
+			)
+		)
+
+		if "from_place" not in trip_columns:
+			connection.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS from_place VARCHAR"))
+			missing_columns.append("from_place")
+		if "to_place" not in trip_columns:
+			connection.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS to_place VARCHAR"))
+			missing_columns.append("to_place")
+		if "mode_of_travel" not in trip_columns:
+			connection.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS mode_of_travel travel_mode"))
+			missing_columns.append("mode_of_travel")
+		if "budget" not in trip_columns:
+			connection.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS budget DOUBLE PRECISION"))
+			missing_columns.append("budget")
+		if "interests" not in trip_columns:
+			connection.execute(
+				text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS interests JSONB DEFAULT '[]'::jsonb")
+			)
+			missing_columns.append("interests")
+		if "description" not in trip_columns:
+			connection.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS description VARCHAR"))
+			missing_columns.append("description")
+
+		connection.commit()
+
+	if missing_columns:
+		logger.info("Added missing trips columns on startup: %s", ", ".join(missing_columns))
+
+
+_ensure_trip_columns()
+
 locations_populated = False
 try:
 	with engine.connect() as connection:

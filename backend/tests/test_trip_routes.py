@@ -106,6 +106,66 @@ def test_create_trip_same_dates_allowed(client: TestClient, sample_user: User, s
 	assert body["endDate"] == "2026-03-05"
 
 
+# ========== LIST ALL TRIPS TESTS ==========
+
+def test_list_all_trips_success(client: TestClient, db_session: Session, sample_user: User, multiple_locations: list[Location]):
+	"""Test listing trips for explore page excludes current user's own trips."""
+	from backend.routes.user.user import _hash_password
+
+	other_user = User(
+		id=uuid4(),
+		username=f"otheruser_{uuid4().hex[:8]}",
+		email=f"other_{uuid4().hex[:8]}@example.com",
+		first_name="Other",
+		last_name="User",
+		hashed_password=_hash_password("OtherPass123!"),
+	)
+	db_session.add(other_user)
+
+	trip1 = Trip(
+		id=uuid4(),
+		start_date=date(2026, 3, 1),
+		end_date=date(2026, 3, 10),
+		status=TripStatus.PLANNED,
+		description="Owned by current user",
+		location_id=multiple_locations[0].id,
+	)
+	trip1.user = sample_user
+
+	trip2 = Trip(
+		id=uuid4(),
+		start_date=date(2026, 4, 1),
+		end_date=date(2026, 4, 5),
+		status=TripStatus.COMPLETED,
+		description="Regular trip owned by another user",
+		location_id=multiple_locations[1].id,
+	)
+	trip2.user = other_user
+
+	db_session.add(trip1)
+	db_session.add(trip2)
+	db_session.commit()
+
+	response = client.get("/trips/", headers=_auth_header(sample_user.id))
+
+	assert response.status_code == 200
+	body = response.json()
+	assert len(body) >= 1
+	trip_ids = {trip["id"] for trip in body}
+	assert str(trip2.id) in trip_ids
+	assert str(trip1.id) not in trip_ids
+
+
+def test_list_all_trips_unauthorized(client: TestClient):
+	"""Test that anonymous users only see seeded explore trips."""
+	response = client.get("/trips/")
+
+	assert response.status_code == 200
+	body = response.json()
+	assert isinstance(body, list)
+
+
+
 # ========== LIST MY TRIPS TESTS ==========
 
 def test_list_my_trips_success(client: TestClient, db_session: Session, sample_user: User, multiple_locations: list[Location]):

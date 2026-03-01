@@ -46,6 +46,22 @@ python backend/src/backend/scripts/seed_destinations.py
 - `.env` file configured with database credentials
 - `backend/data/tourist_destinations.json` file present
 
+### `seed_dummy_trips.py`
+Populates the database with sample users and trips for Explore Trips page testing.
+
+**What it does:**
+1. Ensures sample users exist
+2. Reads existing locations from the database
+3. Creates sample trips with from/to place, mode of travel, budget, interests, and description
+4. Refreshes seeded trips safely when re-run
+
+**How to run:**
+```bash
+python -m backend.scripts.seed_dummy_trips
+# or
+python backend/src/backend/scripts/seed_dummy_trips.py
+```
+
 ## Notes
 - Tags must be defined in the JSON before locations reference them
 - Locations link to tags by name
