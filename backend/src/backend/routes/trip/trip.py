@@ -124,7 +124,7 @@ def create_trip(
 		budget=trip.budget,
 		interests=trip.interests,
 		description=trip.description,
-		location_id=location_id,
+		location_id=trip.locationId,
 	)
 	new_trip.user = user
 	db.add(new_trip)
