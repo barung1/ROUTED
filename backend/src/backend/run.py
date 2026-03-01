@@ -9,7 +9,7 @@ def dev():
 	try:
 		logger.info("Checking dependencies...")
 		subprocess.run(
-			["poetry", "install", "--no-interaction", "--sync"],
+			["poetry", "install", "--no-interaction"],
 			check=True,
 			timeout=30
 		)
