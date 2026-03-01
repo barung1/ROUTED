@@ -92,12 +92,11 @@ else:
 
 def _ensure_trip_columns() -> None:
 	"""Add new trip columns for backward compatibility on existing databases."""
-	db_schema = os.getenv('DB_SCHEMA', 'routed')
 	inspector_local = sqlalchemy.inspect(engine)
-	if "trips" not in inspector_local.get_table_names(schema=db_schema):
+	if "trips" not in inspector_local.get_table_names():
 		return
 
-	trip_columns = {column["name"] for column in inspector_local.get_columns("trips", schema=db_schema)}
+	trip_columns = {column["name"] for column in inspector_local.get_columns("trips")}
 	missing_columns = []
 
 	with engine.connect() as connection:
@@ -118,41 +117,25 @@ def _ensure_trip_columns() -> None:
 		)
 
 		if "from_place" not in trip_columns:
-			connection.execute(text(f"ALTER TABLE {db_schema}.trips ADD COLUMN IF NOT EXISTS from_place VARCHAR"))
+			connection.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS from_place VARCHAR"))
 			missing_columns.append("from_place")
 		if "to_place" not in trip_columns:
-			connection.execute(text(f"ALTER TABLE {db_schema}.trips ADD COLUMN IF NOT EXISTS to_place VARCHAR"))
+			connection.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS to_place VARCHAR"))
 			missing_columns.append("to_place")
 		if "mode_of_travel" not in trip_columns:
-			connection.execute(text(f"ALTER TABLE {db_schema}.trips ADD COLUMN IF NOT EXISTS mode_of_travel travel_mode"))
+			connection.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS mode_of_travel travel_mode"))
 			missing_columns.append("mode_of_travel")
 		if "budget" not in trip_columns:
-			connection.execute(text(f"ALTER TABLE {db_schema}.trips ADD COLUMN IF NOT EXISTS budget DOUBLE PRECISION"))
+			connection.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS budget DOUBLE PRECISION"))
 			missing_columns.append("budget")
 		if "interests" not in trip_columns:
 			connection.execute(
-				text(f"ALTER TABLE {db_schema}.trips ADD COLUMN IF NOT EXISTS interests JSONB DEFAULT '[]'::jsonb")
+				text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS interests JSONB DEFAULT '[]'::jsonb")
 			)
 			missing_columns.append("interests")
 		if "description" not in trip_columns:
-			connection.execute(text(f"ALTER TABLE {db_schema}.trips ADD COLUMN IF NOT EXISTS description VARCHAR"))
+			connection.execute(text("ALTER TABLE trips ADD COLUMN IF NOT EXISTS description VARCHAR"))
 			missing_columns.append("description")
-		if "user_name" not in trip_columns:
-			connection.execute(text(f"ALTER TABLE {db_schema}.trips ADD COLUMN IF NOT EXISTS user_name VARCHAR"))
-			missing_columns.append("user_name")
-
-		connection.execute(
-			text(
-				f"""
-				UPDATE {db_schema}.trips t
-				SET user_name = u.username
-				FROM {db_schema}.user_trips ut
-				JOIN {db_schema}.users u ON u.id = ut.user_id
-				WHERE ut.trip_id = t.id
-				  AND (t.user_name IS NULL OR t.user_name = '');
-				"""
-			)
-		)
 
 		connection.commit()
 
@@ -162,40 +145,7 @@ def _ensure_trip_columns() -> None:
 
 _ensure_trip_columns()
 
-
-def _ensure_user_profile_columns() -> None:
-	"""Add user profile columns for backward compatibility on existing databases."""
-	db_schema = os.getenv('DB_SCHEMA', 'routed')
-	inspector_local = sqlalchemy.inspect(engine)
-	if "users" not in inspector_local.get_table_names(schema=db_schema):
-		return
-
-	user_columns = {column["name"] for column in inspector_local.get_columns("users", schema=db_schema)}
-	missing_columns = []
-
-	with engine.connect() as connection:
-		if "location" not in user_columns:
-			connection.execute(text(f"ALTER TABLE {db_schema}.users ADD COLUMN IF NOT EXISTS location VARCHAR"))
-			missing_columns.append("location")
-		if "interests" not in user_columns:
-			connection.execute(
-				text(f"ALTER TABLE {db_schema}.users ADD COLUMN IF NOT EXISTS interests JSONB DEFAULT '[]'::jsonb")
-			)
-			missing_columns.append("interests")
-		if "bio" not in user_columns:
-			connection.execute(text(f"ALTER TABLE {db_schema}.users ADD COLUMN IF NOT EXISTS bio VARCHAR"))
-			missing_columns.append("bio")
-
-		connection.commit()
-
-	if missing_columns:
-		logger.info("Added missing users columns on startup: %s", ", ".join(missing_columns))
-
-
-_ensure_user_profile_columns()
-
-# Check if database is empty and needs initial seeding
-database_needs_seeding = False
+locations_populated = False
 try:
 	with engine.connect() as connection:
 		from backend.models.location import Location

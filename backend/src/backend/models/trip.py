@@ -48,7 +48,6 @@ class Trip(Base):
 	start_date:Mapped[date] = mapped_column(nullable=False)
 	end_date:Mapped[date] = mapped_column(nullable=False)
 	status:Mapped[TripStatus] = mapped_column(nullable=False,default=TripStatus.PLANNED)
-	user_name: Mapped[str | None] = mapped_column(String, nullable=True)
 	from_place: Mapped[str | None] = mapped_column(String, nullable=True)
 	to_place: Mapped[str | None] = mapped_column(String, nullable=True)
 	mode_of_travel: Mapped[TravelMode | None] = mapped_column(
