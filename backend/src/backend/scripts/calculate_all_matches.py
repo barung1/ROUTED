@@ -14,6 +14,7 @@ from backend.loggers.logger import get_logger
 from backend.models.trip import Trip, TripStatus
 from backend.services.match_service import MatchService
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 
 logger = get_logger("calculate_all_matches", "calculate_all_matches.log")
 
@@ -30,7 +31,9 @@ def calculate_all_matches():
 	try:
 		# Get all PLANNED trips
 		planned_trips = db.execute(
-			select(Trip).where(Trip.status == TripStatus.PLANNED)
+			select(Trip)
+			.where(Trip.status == TripStatus.PLANNED)
+			.options(selectinload(Trip.user))
 		).scalars().all()
 		
 		if not planned_trips:
