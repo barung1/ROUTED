@@ -11,6 +11,7 @@ from backend.config.db import get_db_session
 from backend.models.location import Location
 from backend.models.trip import Trip, TripStatus
 from backend.models.user import User
+from backend.services.match_service import MatchService
 
 router = APIRouter()
 
@@ -130,6 +131,16 @@ def create_trip(
 	db.add(new_trip)
 	db.commit()
 	db.refresh(new_trip)
+	
+	# Calculate and store matches for this new trip
+	try:
+		matches_count = MatchService.calculate_matches_for_trip(new_trip, db)
+		if matches_count > 0:
+			db.commit()
+	except Exception as e:
+		# Log error but don't fail the trip creation
+		print(f"Warning: Failed to calculate matches: {e}")
+	
 	return _to_public(new_trip)
 
 
@@ -203,6 +214,11 @@ def update_trip(
 			detail="Trip not found",
 		)
 	_assert_trip_ownership(trip, user_id)
+	
+	# Track if status changed from PLANNED to something else
+	original_status = trip.status
+	status_changed_from_planned = False
+	
 	if update.locationId is not None:
 		location = db.execute(select(Location).where(Location.id == update.locationId)).scalars().first()
 		if not location:
@@ -216,6 +232,8 @@ def update_trip(
 	if update.endDate is not None:
 		trip.end_date = update.endDate
 	if update.status is not None:
+		if original_status == TripStatus.PLANNED and update.status != TripStatus.PLANNED:
+			status_changed_from_planned = True
 		trip.status = update.status
 	if update.fromPlace is not None:
 		trip.from_place = update.fromPlace
@@ -231,9 +249,26 @@ def update_trip(
 		trip.description = update.description
 
 	_validate_date_range(trip.start_date, trip.end_date)
+	
+	# If status changed from PLANNED, remove existing matches
+	if status_changed_from_planned:
+		try:
+			MatchService.delete_matches_for_trip(trip_id, db)
+		except Exception as e:
+			print(f"Warning: Failed to delete matches: {e}")
 
 	db.commit()
 	db.refresh(trip)
+	
+	# Recalculate matches after trip update (only if status is PLANNED)
+	if trip.status == TripStatus.PLANNED:
+		try:
+			matches_count = MatchService.calculate_matches_for_trip(trip, db)
+			if matches_count > 0:
+				db.commit()
+		except Exception as e:
+			print(f"Warning: Failed to recalculate matches: {e}")
+	
 	return _to_public(trip)
 
 
@@ -250,5 +285,12 @@ def delete_trip(
 			detail="Trip not found",
 		)
 	_assert_trip_ownership(trip, user_id)
+	
+	# Delete all matches related to this trip
+	try:
+		MatchService.delete_matches_for_trip(trip_id, db)
+	except Exception as e:
+		print(f"Warning: Failed to delete matches: {e}")
+	
 	db.delete(trip)
 	db.commit()
