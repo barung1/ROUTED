@@ -66,7 +66,6 @@ class MatchDetailModel(BaseModel):
 	
 	# Current user's perspective
 	myUserId: UUID
-	isUserA: bool
 	myTrip: TripBasic
 	
 	# Other user's information

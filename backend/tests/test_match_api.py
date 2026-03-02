@@ -51,13 +51,14 @@ def user_b(db: Session):
 @pytest.fixture
 def location(db: Session):
 	"""Create test location."""
-	from geoalchemy2.shape import from_shape
-	from shapely.geometry import Point
+	from geoalchemy2.types import WKTElement
 	location = Location(
 		name="Paris",
+		latitude=48.8566,
+		longitude=2.3522,
 		description="The City of Light",
-		position=from_shape(Point(2.3522, 48.8566), srid=4326),
 	)
+	location.geometry = WKTElement(f"POINT({location.longitude} {location.latitude})")
 	db.add(location)
 	db.commit()
 	db.refresh(location)
@@ -68,6 +69,7 @@ def location(db: Session):
 def trip_a(user_a: User, location: Location, db: Session):
 	"""Create first test trip."""
 	trip = Trip(
+		user_id=user_a.id,
 		location_id=location.id,
 		start_date=date(2026, 5, 10),
 		end_date=date(2026, 5, 15),
@@ -76,7 +78,6 @@ def trip_a(user_a: User, location: Location, db: Session):
 		to_place="Paris",
 		description="Spring trip to Paris",
 	)
-	trip.user = user_a
 	db.add(trip)
 	db.commit()
 	db.refresh(trip)
@@ -87,6 +88,7 @@ def trip_a(user_a: User, location: Location, db: Session):
 def trip_b(user_b: User, location: Location, db: Session):
 	"""Create second test trip (overlapping with trip_a)."""
 	trip = Trip(
+		user_id=user_b.id,
 		location_id=location.id,
 		start_date=date(2026, 5, 12),
 		end_date=date(2026, 5, 18),
@@ -95,7 +97,6 @@ def trip_b(user_b: User, location: Location, db: Session):
 		to_place="Paris",
 		description="Spring vacation in Paris",
 	)
-	trip.user = user_b
 	db.add(trip)
 	db.commit()
 	db.refresh(trip)

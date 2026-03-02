@@ -95,7 +95,6 @@ def _to_match_detail(match: Match, current_user_id: UUID, db: Session) -> MatchD
 		matchEnd=match.match_end,
 		createdAt=match.created_at,
 		myUserId=current_user_id,
-		isUserA=match.user_a_id == current_user_id,
 		myTrip=TripBasic(
 			id=my_trip.id,
 			locationId=my_trip.location_id,
