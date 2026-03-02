@@ -12,7 +12,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from backend.models.match import Match, MatchStatus
+from backend.models.match import Match
 from backend.models.trip import Trip, TripStatus
 
 
@@ -227,7 +227,6 @@ class MatchService:
 			location_id=trip_a.location_id,
 			match_start=match_start,
 			match_end=match_end,
-			status=MatchStatus.PENDING,
 			score=score,
 		)
 		db.add(new_match)
