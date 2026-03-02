@@ -145,7 +145,8 @@ def _ensure_trip_columns() -> None:
 
 _ensure_trip_columns()
 
-locations_populated = False
+# Check if database is empty and needs initial seeding
+database_needs_seeding = False
 try:
 	with engine.connect() as connection:
 		from backend.models.location import Location
