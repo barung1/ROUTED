@@ -1,12 +1,13 @@
 """Seed script to populate dummy users and trips for the Explore Trips page."""
 
 from datetime import date
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy import text
 
 from backend.config.db import _ensure_postgres_dependencies, _load_models, get_db_session
 from backend.loggers.logger import get_logger
 from backend.models.location import Location
+from backend.models.match import Match
 from backend.models.trip import TravelMode, Trip, TripStatus
 from backend.models.user import User
 from backend.routes.user.user import _hash_password
@@ -53,6 +54,7 @@ SEED_USERNAMES = {user["username"] for user in DUMMY_USERS}
 
 DUMMY_TRIPS = [
     {
+        "owner_username": "anna_lee",
         "start_date": date(2026, 3, 2),
         "end_date": date(2026, 3, 6),
         "status": TripStatus.PLANNED,
@@ -64,6 +66,7 @@ DUMMY_TRIPS = [
         "description": "Weekend falls trip.",
     },
     {
+        "owner_username": "ben_stone",
         "start_date": date(2026, 3, 10),
         "end_date": date(2026, 3, 14),
         "status": TripStatus.PLANNED,
@@ -75,6 +78,7 @@ DUMMY_TRIPS = [
         "description": "Mountain hiking getaway.",
     },
     {
+        "owner_username": "chris_miller",
         "start_date": date(2026, 3, 20),
         "end_date": date(2026, 3, 21),
         "status": TripStatus.PLANNED,
@@ -86,6 +90,7 @@ DUMMY_TRIPS = [
         "description": "Quick city break.",
     },
     {
+        "owner_username": "diana_wong",
         "start_date": date(2026, 4, 3),
         "end_date": date(2026, 4, 9),
         "status": TripStatus.PLANNED,
@@ -97,6 +102,7 @@ DUMMY_TRIPS = [
         "description": "Spring mountain escape.",
     },
     {
+        "owner_username": "ethan_kim",
         "start_date": date(2026, 4, 15),
         "end_date": date(2026, 4, 18),
         "status": TripStatus.COMPLETED,
@@ -108,6 +114,7 @@ DUMMY_TRIPS = [
         "description": "Lakeside scenic drive.",
     },
     {
+        "owner_username": "anna_lee",
         "start_date": date(2026, 4, 25),
         "end_date": date(2026, 4, 27),
         "status": TripStatus.CANCELLED,
@@ -119,6 +126,7 @@ DUMMY_TRIPS = [
         "description": "Desert canyon plan.",
     },
     {
+        "owner_username": "ben_stone",
         "start_date": date(2026, 5, 4),
         "end_date": date(2026, 5, 8),
         "status": TripStatus.PLANNED,
@@ -130,6 +138,7 @@ DUMMY_TRIPS = [
         "description": "National park wildlife tour.",
     },
     {
+        "owner_username": "chris_miller",
         "start_date": date(2026, 5, 12),
         "end_date": date(2026, 5, 16),
         "status": TripStatus.PLANNED,
@@ -141,6 +150,7 @@ DUMMY_TRIPS = [
         "description": "City lights and shopping trip.",
     },
     {
+        "owner_username": "diana_wong",
         "start_date": date(2026, 5, 21),
         "end_date": date(2026, 5, 24),
         "status": TripStatus.COMPLETED,
@@ -152,6 +162,7 @@ DUMMY_TRIPS = [
         "description": "Engineering and history weekend.",
     },
     {
+        "owner_username": "ethan_kim",
         "start_date": date(2026, 6, 2),
         "end_date": date(2026, 6, 6),
         "status": TripStatus.PLANNED,
@@ -197,8 +208,13 @@ def _seed_dummy_trips(db, users: list[User], locations: list[Location]) -> int:
 
     created_count = 0
 
+    user_by_username = {user.username: user for user in users}
+
     for index, trip_template in enumerate(DUMMY_TRIPS):
-        target_user = users[index % len(users)]
+        owner_username = trip_template["owner_username"]
+        target_user = user_by_username.get(owner_username)
+        if target_user is None:
+            continue
         target_location = locations[index % len(locations)]
 
         existing_trip = db.execute(
@@ -217,6 +233,7 @@ def _seed_dummy_trips(db, users: list[User], locations: list[Location]) -> int:
             start_date=trip_template["start_date"],
             end_date=trip_template["end_date"],
             status=trip_template["status"],
+            user_name=target_user.username,
             from_place=trip_template["from_place"],
             to_place=trip_template["to_place"],
             mode_of_travel=trip_template["mode_of_travel"],
@@ -256,6 +273,19 @@ def _ensure_trip_schema_compatibility(db) -> None:
     db.execute(text("ALTER TABLE routed.trips ADD COLUMN IF NOT EXISTS budget DOUBLE PRECISION"))
     db.execute(text("ALTER TABLE routed.trips ADD COLUMN IF NOT EXISTS interests JSONB DEFAULT '[]'::jsonb"))
     db.execute(text("ALTER TABLE routed.trips ADD COLUMN IF NOT EXISTS description VARCHAR"))
+    db.execute(text("ALTER TABLE routed.trips ADD COLUMN IF NOT EXISTS user_name VARCHAR"))
+    db.execute(
+        text(
+            """
+            UPDATE routed.trips t
+            SET user_name = u.username
+            FROM routed.user_trips ut
+            JOIN routed.users u ON u.id = ut.user_id
+            WHERE ut.trip_id = t.id
+              AND (t.user_name IS NULL OR t.user_name = '');
+            """
+        )
+    )
     db.flush()
 
 
@@ -265,6 +295,24 @@ def _remove_existing_seed_trips(db) -> int:
         .scalars()
         .all()
     )
+
+    seed_trip_ids = [trip.id for trip in seed_trips]
+    if seed_trip_ids:
+        seed_matches = (
+            db.execute(
+                select(Match).where(
+                    or_(
+                        Match.trip_a_id.in_(seed_trip_ids),
+                        Match.trip_b_id.in_(seed_trip_ids),
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        for match in seed_matches:
+            db.delete(match)
+
     removed_count = len(seed_trips)
     for trip in seed_trips:
         db.delete(trip)
