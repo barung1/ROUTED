@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../api/client'
+import type { InterestRecord } from './Explore'
 
 /* ── Types mirroring MatchDetailModel from the backend ── */
 interface UserBasic {
@@ -56,10 +57,10 @@ const fadeUp = (delay = 0) => ({
 })
 
 const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const overlapDays = (start: string, end: string) => {
-  const ms = new Date(end).getTime() - new Date(start).getTime()
+  const ms = new Date(end + 'T00:00:00').getTime() - new Date(start + 'T00:00:00').getTime()
   return Math.max(1, Math.round(ms / 86_400_000) + 1)
 }
 
@@ -78,15 +79,20 @@ const scoreColor = (score: number) => {
   return 'text-red-500'
 }
 
-const ACCEPTED_STATUSES: MatchStatus[] = ['user_a_accepted', 'user_b_accepted', 'both_accepted']
+const ACCEPTED_STATUSES: MatchStatus[] = ['both_accepted']
 
 /* ════════════════════════════════════════════════ */
 const Matches: React.FC = () => {
   const [matches, setMatches] = useState<MatchDetail[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMatch, setSelectedMatch] = useState<MatchDetail | null>(null)
+  const [acceptedInterests, setAcceptedInterests] = useState<InterestRecord[]>([])
 
   const isLoggedIn = () => !!localStorage.getItem('routed_token')
+
+  const getCurrentUser = () => {
+    try { return JSON.parse(localStorage.getItem('routed_user') || 'null') } catch { return null }
+  }
 
   /* ── Fetch only accepted matches ── */
   const loadMatches = useCallback(async () => {
@@ -104,10 +110,31 @@ const Matches: React.FC = () => {
     }
   }, [])
 
+  /* ── Load accepted interests from localStorage ── */
+  const loadAcceptedInterests = useCallback(() => {
+    const user = getCurrentUser()
+    if (!user) return
+    const all: InterestRecord[] = JSON.parse(localStorage.getItem('routed_interests') || '[]')
+    // Show interests that are accepted AND involve the current user (either as sender or receiver)
+    setAcceptedInterests(
+      all.filter((r) => r.status === 'accepted' && (r.fromUserId === user.id || r.toUserId === user.id)),
+    )
+  }, [])
+
   useEffect(() => {
-    if (isLoggedIn()) loadMatches()
-    else setLoading(false)
-  }, [loadMatches])
+    if (isLoggedIn()) {
+      loadMatches()
+      loadAcceptedInterests()
+    } else {
+      setLoading(false)
+    }
+    // Listen for localStorage changes from other pages
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'routed_interests') loadAcceptedInterests()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [loadMatches, loadAcceptedInterests])
 
   /* ═══════════════ RENDER ═══════════════ */
 
@@ -168,6 +195,11 @@ const Matches: React.FC = () => {
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 bg-violet-50 px-3 py-1.5 rounded-lg">
             🤝 {matches.length} matched trip{matches.length !== 1 ? 's' : ''}
           </span>
+          {acceptedInterests.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-pink-600 bg-pink-50 px-3 py-1.5 rounded-lg">
+              ❤️ {acceptedInterests.length} interest match{acceptedInterests.length !== 1 ? 'es' : ''}
+            </span>
+          )}
           <span className="flex-1" />
           <Link to="/dashboard" className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">
             💡 View Recommendations on Dashboard →
@@ -181,12 +213,12 @@ const Matches: React.FC = () => {
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
           </div>
-        ) : matches.length === 0 ? (
+        ) : matches.length === 0 && acceptedInterests.length === 0 ? (
           <motion.div {...fadeUp(0.1)} className="text-center py-20">
             <span className="text-6xl mb-4 block">🤝</span>
             <h3 className="text-xl font-bold text-gray-900 mb-2">No matched trips yet</h3>
             <p className="text-gray-500 max-w-md mx-auto mb-6">
-              Accept recommendations from your Dashboard to see matched travelers here.
+              Accept recommendations from your Dashboard or show interest on trips to see matches here.
             </p>
             <Link
               to="/dashboard"
@@ -196,7 +228,71 @@ const Matches: React.FC = () => {
             </Link>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <>
+            {/* ── Accepted Interest Matches ── */}
+            {acceptedInterests.length > 0 && (
+              <motion.div {...fadeUp(0.05)} className="mb-8">
+                <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  ❤️ Interest Matches
+                  <span className="text-xs bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full font-bold">{acceptedInterests.length}</span>
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {acceptedInterests.map((record, i) => {
+                    const user = getCurrentUser()
+                    const isReceiver = record.toUserId === user?.id
+                    const otherUsername = isReceiver ? record.fromUsername : record.toUsername
+                    return (
+                      <motion.div
+                        key={record.id}
+                        {...fadeUp(0.04 * Math.min(i, 8))}
+                        whileHover={{ y: -4 }}
+                        className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-pink-200/60 hover:border-pink-300 overflow-hidden transition-all group"
+                      >
+                        <div className="h-2 bg-gradient-to-r from-pink-400 to-rose-400" />
+                        <div className="p-5">
+                          <div className="flex items-center gap-2 mb-3">
+                            <span className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center text-sm text-white font-bold shadow-sm">
+                              {otherUsername.charAt(0).toUpperCase()}
+                            </span>
+                            <div className="min-w-0">
+                              <span className="text-sm font-semibold text-gray-800 block truncate">@{otherUsername}</span>
+                              <span className="text-[11px] text-gray-400 truncate block">
+                                {isReceiver ? 'Interested in your trip' : 'You showed interest'}
+                              </span>
+                            </div>
+                            <span className="flex-1" />
+                            <span className="text-[10px] font-bold px-2 py-1 rounded-full shrink-0 bg-emerald-50 text-emerald-700">
+                              🎉 Matched!
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-base">🗺️</span>
+                            <span className="text-sm font-semibold text-gray-900">{record.tripLabel}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">📅</span>
+                            <span className="text-xs text-gray-600">
+                              {fmtDate(record.tripStartDate)} – {fmtDate(record.tripEndDate)}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── Backend-matched Trips ── */}
+            {matches.length > 0 && (
+              <motion.div {...fadeUp(0.1)}>
+                {acceptedInterests.length > 0 && (
+                  <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    🤝 Algorithm Matches
+                    <span className="text-xs bg-violet-100 text-violet-600 px-2 py-0.5 rounded-full font-bold">{matches.length}</span>
+                  </h2>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {matches.map((match, i) => {
               const ui = STATUS_UI[match.status] || STATUS_UI.both_accepted
               const days = overlapDays(match.matchStart, match.matchEnd)
@@ -281,7 +377,10 @@ const Matches: React.FC = () => {
                 </motion.div>
               )
             })}
-          </div>
+                </div>
+              </motion.div>
+            )}
+          </>
         )}
       </main>
 

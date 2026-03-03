@@ -23,6 +23,7 @@ const Sidebar: React.FC = () => {
           <Item to="/trips">🧳 My trips</Item>
           <Item to="/suggestions">💡 Recommendations</Item>
           <Item to="/matches">🤝 Matches</Item>
+          <Item to="/explore">🔍 Explore</Item>
         </div>
       </nav>
 

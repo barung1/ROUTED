@@ -651,7 +651,7 @@ const Trips: React.FC = () => {
                                   : trip.toPlace || trip.fromPlace || 'Trip'}
                               </h4>
                               <p className="text-xs text-gray-500 mt-0.5">
-                                � {new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                📅 {new Date(trip.startDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(trip.endDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                               </p>
                             </div>
                             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border shrink-0 ${sc}`}>

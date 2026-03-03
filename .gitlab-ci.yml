@@ -229,3 +229,35 @@ tripRoutes-tests:
     - mkdir -p ../test-reports
     - PYTHONPATH=../src pytest test_trip_routes.py -q --maxfail=3 --junitxml=../test-reports/tripRoutes.xml
 
+frontend-tests:
+  stage: test
+  image: node:22-alpine
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes:
+        - frontend/**/*
+    - changes:
+        - frontend/**/*
+        - .gitlab-ci.yml
+    - when: manual
+      allow_failure: false
+  cache:
+    key: npm-${CI_COMMIT_REF_SLUG}
+    paths:
+      - frontend/node_modules/
+  artifacts:
+    when: always
+    paths:
+      - frontend/test-reports/
+      - frontend/coverage/
+    reports:
+      junit: frontend/test-reports/vitest.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: frontend/coverage/cobertura-coverage.xml
+  script:
+    - cd frontend
+    - npm ci
+    - npx vitest run --reporter=default --reporter=junit --outputFile.junit=test-reports/vitest.xml
+
+

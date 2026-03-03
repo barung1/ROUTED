@@ -7,7 +7,7 @@ import api from '../api/client'
 interface TripItem {
   id: string
   userId: string | null
-  username: string | null
+  userName: string | null
   locationId: string
   startDate: string
   endDate: string
@@ -18,6 +18,21 @@ interface TripItem {
   budget: number | null
   interests: string[]
   description: string | null
+}
+
+/* ── Interest record stored in localStorage ── */
+export interface InterestRecord {
+  id: string
+  fromUserId: string
+  fromUsername: string
+  toUserId: string
+  toUsername: string
+  tripId: string
+  tripLabel: string
+  tripStartDate: string
+  tripEndDate: string
+  timestamp: string
+  status: 'pending' | 'accepted' | 'declined'
 }
 
 /* ── helpers ── */
@@ -38,8 +53,11 @@ const modeEmoji: Record<string, string> = {
 /* Fallback username when a trip has no username */
 const FALLBACK_USERNAME = 'traveler'
 
+/** Parse a date-only string (YYYY-MM-DD) as local time, not UTC */
+const parseLocalDate = (d: string) => new Date(d + 'T00:00:00')
+
 const LS_SHORTLIST_KEY = 'routed_shortlisted'
-const LS_INTERESTED_KEY = 'routed_interested'
+const LS_INTERESTS_KEY = 'routed_interests'
 
 /* ════════════════════════════════════════════════ */
 const Explore: React.FC = () => {
@@ -49,7 +67,8 @@ const Explore: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [selectedTrip, setSelectedTrip] = useState<TripItem | null>(null)
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set())
-  const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set())
+  const [interestedTripIds, setInterestedTripIds] = useState<Set<string>>(new Set())
+  const [interestSending, setInterestSending] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const isLoggedIn = () => !!localStorage.getItem('routed_token')
@@ -69,8 +88,14 @@ const Explore: React.FC = () => {
 
   /* ── Helper: get display username for a trip ── */
   const getDisplayUsername = (trip: TripItem): string => {
-    if (trip.username) return trip.username
+    if (trip.userName) return trip.userName
     return FALLBACK_USERNAME
+  }
+
+  /* ── Helper: trip label ── */
+  const getTripLabel = (trip: TripItem): string => {
+    if (trip.fromPlace && trip.toPlace) return `${trip.fromPlace} → ${trip.toPlace}`
+    return trip.toPlace || trip.fromPlace || 'Trip'
   }
 
   /* ── Load trips from API ── */
@@ -79,7 +104,12 @@ const Explore: React.FC = () => {
       setLoading(true)
       try {
         const res = await api.get('/trips/')
-        setTrips(res.data as TripItem[])
+        const data = res.data as TripItem[]
+        // Sort newest trips first (nearest start date first)
+        data.sort((a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+        )
+        setTrips(data)
       } catch {
         setTrips([])
       } finally {
@@ -89,12 +119,17 @@ const Explore: React.FC = () => {
     load()
   }, [])
 
-  /* ── Load shortlisted & interested from localStorage ── */
+  /* ── Load shortlisted & interests from localStorage ── */
   useEffect(() => {
     const savedShortlist: TripItem[] = JSON.parse(localStorage.getItem(LS_SHORTLIST_KEY) || '[]')
     setShortlistedIds(new Set(savedShortlist.map((t) => t.id)))
-    const savedInterested: string[] = JSON.parse(localStorage.getItem(LS_INTERESTED_KEY) || '[]')
-    setInterestedIds(new Set(savedInterested))
+    // Load interests this user has sent
+    const currentUser = getCurrentUser()
+    if (currentUser) {
+      const allInterests: InterestRecord[] = JSON.parse(localStorage.getItem(LS_INTERESTS_KEY) || '[]')
+      const myPending = allInterests.filter((r) => r.fromUserId === currentUser.id && r.status === 'pending')
+      setInterestedTripIds(new Set(myPending.map((r) => r.tripId)))
+    }
   }, [])
 
   /* ── Filter trips by search ── */
@@ -140,18 +175,44 @@ const Explore: React.FC = () => {
     setShortlistedIds(new Set(updated.map((t) => t.id)))
   }
 
-  /* ── Toggle interested ── */
-  const toggleInterested = (tripId: string) => {
-    const saved: string[] = JSON.parse(localStorage.getItem(LS_INTERESTED_KEY) || '[]')
-    const exists = saved.includes(tripId)
-    let updated: string[]
-    if (exists) {
-      updated = saved.filter((id) => id !== tripId)
+  /* ── Show interest on a trip ── */
+  const handleShowInterest = (trip: TripItem) => {
+    const currentUser = getCurrentUser()
+    if (!currentUser || !trip.userId) return
+
+    setInterestSending(trip.id)
+
+    const allInterests: InterestRecord[] = JSON.parse(localStorage.getItem(LS_INTERESTS_KEY) || '[]')
+    const existing = allInterests.find(
+      (r) => r.fromUserId === currentUser.id && r.tripId === trip.id && r.status === 'pending'
+    )
+
+    if (existing) {
+      // Toggle off — remove interest
+      const updated = allInterests.filter((r) => r.id !== existing.id)
+      localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(updated))
+      setInterestedTripIds((prev) => { const s = new Set(prev); s.delete(trip.id); return s })
     } else {
-      updated = [...saved, tripId]
+      // Add new interest
+      const record: InterestRecord = {
+        id: crypto.randomUUID(),
+        fromUserId: currentUser.id,
+        fromUsername: currentUser.username || 'unknown',
+        toUserId: trip.userId,
+        toUsername: trip.userName || getDisplayUsername(trip),
+        tripId: trip.id,
+        tripLabel: getTripLabel(trip),
+        tripStartDate: trip.startDate,
+        tripEndDate: trip.endDate,
+        timestamp: new Date().toISOString(),
+        status: 'pending',
+      }
+      allInterests.push(record)
+      localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(allInterests))
+      setInterestedTripIds((prev) => new Set(prev).add(trip.id))
     }
-    localStorage.setItem(LS_INTERESTED_KEY, JSON.stringify(updated))
-    setInterestedIds(new Set(updated))
+
+    setTimeout(() => setInterestSending(null), 300)
   }
 
   /* ═══════════════ RENDER ═══════════════ */
@@ -249,7 +310,8 @@ const Explore: React.FC = () => {
               const currentUser = getCurrentUser()
               const isOwnTrip = currentUser && trip.userId === currentUser.id
               const isShortlisted = shortlistedIds.has(trip.id)
-              const isInterested = interestedIds.has(trip.id)
+              const isInterested = interestedTripIds.has(trip.id)
+              const isSendingInterest = interestSending === trip.id
               return (
                 <motion.div
                   key={trip.id}
@@ -280,7 +342,7 @@ const Explore: React.FC = () => {
                             : trip.toPlace || trip.fromPlace || 'Trip'}
                         </h4>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          📅 {new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          📅 {parseLocalDate(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {parseLocalDate(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                       </div>
                     </div>
@@ -348,12 +410,13 @@ const Explore: React.FC = () => {
                       {/* I'm Interested — only when signed in & NOT own trip */}
                       {isLoggedIn() && !isOwnTrip && (
                         <button
-                          onClick={() => toggleInterested(trip.id)}
+                          disabled={isSendingInterest}
+                          onClick={() => handleShowInterest(trip)}
                           className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-all ${
                             isInterested
                               ? 'bg-pink-100 text-pink-600 border border-pink-200'
                               : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-pink-50 hover:text-pink-600 hover:border-pink-200'
-                          }`}
+                          } ${isSendingInterest ? 'opacity-50' : ''}`}
                         >
                           {isInterested ? '❤️ Interested' : '🤍 I\'m Interested'}
                         </button>
@@ -430,9 +493,9 @@ const Explore: React.FC = () => {
                   <div className="flex items-center gap-2 text-sm text-gray-700">
                     <span className="text-base">📅</span>
                     <span className="font-medium">
-                      {new Date(selectedTrip.startDate).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
+                      {parseLocalDate(selectedTrip.startDate).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
                       {' — '}
-                      {new Date(selectedTrip.endDate).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
+                      {parseLocalDate(selectedTrip.endDate).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
                     </span>
                   </div>
 
@@ -505,14 +568,15 @@ const Explore: React.FC = () => {
                   )}
                   {isLoggedIn() && !(getCurrentUser() && selectedTrip.userId === getCurrentUser().id) && (
                     <button
-                      onClick={() => toggleInterested(selectedTrip.id)}
+                      disabled={interestSending === selectedTrip.id}
+                      onClick={() => handleShowInterest(selectedTrip)}
                       className={`px-4 py-2.5 text-sm rounded-xl font-medium transition-all ${
-                        interestedIds.has(selectedTrip.id)
+                        interestedTripIds.has(selectedTrip.id)
                           ? 'bg-pink-100 text-pink-600 border border-pink-200'
                           : 'border border-gray-200 text-gray-600 hover:bg-pink-50 hover:text-pink-600 hover:border-pink-200'
-                      }`}
+                      } ${interestSending === selectedTrip.id ? 'opacity-50' : ''}`}
                     >
-                      {interestedIds.has(selectedTrip.id) ? '❤️ Interested' : '🤍 I\'m Interested'}
+                      {interestedTripIds.has(selectedTrip.id) ? '❤️ Interested' : '🤍 I\'m Interested'}
                     </button>
                   )}
                   {isLoggedIn() && (
