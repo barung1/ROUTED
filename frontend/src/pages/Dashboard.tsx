@@ -1,10 +1,53 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import logo from '../assets/logo.png'
 import api from '../api/client'
 
 /* ── types ── */
+interface UserBasic {
+  id: string
+  username: string
+  firstName: string | null
+  lastName: string | null
+  email: string | null
+}
+
+interface TripBasic {
+  id: string
+  locationId: string
+  startDate: string
+  endDate: string
+  fromPlace: string | null
+  toPlace: string | null
+  budget: number | null
+}
+
+interface LocationBasic {
+  id: string
+  name: string
+}
+
+type MatchStatus =
+  | 'pending'
+  | 'user_a_accepted'
+  | 'user_b_accepted'
+  | 'both_accepted'
+  | 'rejected'
+
+interface MatchDetail {
+  id: string
+  status: MatchStatus
+  score: number
+  matchStart: string
+  matchEnd: string
+  createdAt: string
+  myUserId: string
+  myTrip: TripBasic
+  otherUser: UserBasic
+  otherTrip: TripBasic
+  location: LocationBasic
+}
 
 /* ── constants ── */
 const CURRENCIES = [
@@ -55,6 +98,59 @@ const Dashboard: React.FC = () => {
   const location = useLocation()
   const greeting = getGreeting()
   const [creatingTrip, setCreatingTrip] = useState(false)
+
+  /* ── Recommendations (pending matches from the backend) ── */
+  const [recommendations, setRecommendations] = useState<MatchDetail[]>([])
+  const [recLoading, setRecLoading] = useState(true)
+  const [recActionLoading, setRecActionLoading] = useState<string | null>(null)
+
+  const fmtDate = (d: string) =>
+    new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+  const loadRecommendations = useCallback(async () => {
+    setRecLoading(true)
+    try {
+      const res = await api.get('/matches/me', { params: { limit: 100 } })
+      // Only show pending matches as recommendations
+      setRecommendations(
+        (res.data as MatchDetail[]).filter((m) => m.status === 'pending'),
+      )
+    } catch {
+      setRecommendations([])
+    } finally {
+      setRecLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (localStorage.getItem('routed_token')) loadRecommendations()
+    else setRecLoading(false)
+  }, [loadRecommendations])
+
+  const handleRecAccept = async (match: MatchDetail) => {
+    setRecActionLoading(match.id)
+    try {
+      try {
+        await api.put(`/matches/${match.id}`, { status: 'user_a_accepted' })
+      } catch {
+        await api.put(`/matches/${match.id}`, { status: 'user_b_accepted' })
+      }
+      // Remove from recommendations (it moves to the Matches page)
+      setRecommendations((prev) => prev.filter((m) => m.id !== match.id))
+    } catch { /* ignore */ } finally {
+      setRecActionLoading(null)
+    }
+  }
+
+  const handleRecDecline = async (match: MatchDetail) => {
+    setRecActionLoading(match.id)
+    try {
+      await api.put(`/matches/${match.id}`, { status: 'rejected' })
+      setRecommendations((prev) => prev.filter((m) => m.id !== match.id))
+    } catch { /* ignore */ } finally {
+      setRecActionLoading(null)
+    }
+  }
 
   /* auto-open trip form when navigated from Trips page or Explore page */
   useEffect(() => {
@@ -389,7 +485,7 @@ const Dashboard: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* ═══ RECOMMENDATIONS ═══ */}
+          {/* ═══ RECOMMENDATIONS (pending matches) ═══ */}
           <motion.div
             {...fadeUp(0.3)}
             className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-200/60 p-6 hover:shadow-xl transition-shadow min-h-[28rem] flex flex-col"
@@ -397,34 +493,85 @@ const Dashboard: React.FC = () => {
             <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
               <span className="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg">💡</span>
               Recommendations
+              {recommendations.length > 0 && (
+                <span className="ml-1 text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold">
+                  {recommendations.length}
+                </span>
+              )}
             </h3>
 
-            <div className="space-y-3">
-              {[
-                { title: 'Paris, France', desc: 'Popular among travelers with similar interests', emoji: '🗼', accent: 'hover:border-rose-300 hover:bg-rose-50/40' },
-                { title: 'Tokyo, Japan', desc: 'Trending destination this season', emoji: '⛩️', accent: 'hover:border-red-300 hover:bg-red-50/40' },
-                { title: 'Cape Town, South Africa', desc: 'Great match for adventure seekers', emoji: '🏔️', accent: 'hover:border-emerald-300 hover:bg-emerald-50/40' },
-              ].map((rec, i) => (
-                <motion.div
-                  key={i}
-                  whileHover={{ scale: 1.01, x: 4 }}
-                  className={`flex items-center gap-4 p-4 rounded-2xl border border-gray-200 ${rec.accent} transition-all cursor-pointer group`}
-                >
-                  <span className="w-11 h-11 rounded-full bg-amber-50 flex items-center justify-center text-xl shadow-sm group-hover:shadow-md transition">{rec.emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900">{rec.title}</p>
-                    <p className="text-xs text-gray-500 truncate">{rec.desc}</p>
-                  </div>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gray-300 group-hover:text-amber-400 transition shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-                </motion.div>
-              ))}
-            </div>
+            {recLoading ? (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="w-7 h-7 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+              </div>
+            ) : recommendations.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+                <span className="text-4xl mb-3">🤝</span>
+                <p className="text-sm font-semibold text-gray-700 mb-1">No pending recommendations</p>
+                <p className="text-xs text-gray-400 leading-relaxed max-w-xs">
+                  When travelers plan trips to the same destination during the same dates as you, they'll show up here.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 flex-1">
+                {recommendations.slice(0, 5).map((match) => {
+                  const isActing = recActionLoading === match.id
+                  return (
+                    <motion.div
+                      key={match.id}
+                      whileHover={{ scale: 1.01, x: 4 }}
+                      className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all group"
+                    >
+                      {/* Avatar */}
+                      <span className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-sm text-white font-bold shadow-sm shrink-0">
+                        {match.otherUser.username.charAt(0).toUpperCase()}
+                      </span>
 
-            <div className="mt-auto pt-5 text-center">
-              <Link to="/suggestions" className="text-sm text-indigo-600 font-semibold hover:text-indigo-800 transition">
-                View all suggestions →
-              </Link>
-            </div>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-900 text-sm truncate">
+                          @{match.otherUser.username}
+                        </p>
+                        <p className="text-[11px] text-gray-500 truncate">
+                          📍 {match.location.name} · {fmtDate(match.matchStart)} – {fmtDate(match.matchEnd)}
+                        </p>
+                        <p className="text-[10px] text-amber-600 font-semibold mt-0.5">
+                          ⭐ {match.score.toFixed(0)}% match
+                        </p>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          disabled={isActing}
+                          onClick={(e) => { e.stopPropagation(); handleRecAccept(match) }}
+                          className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200 transition disabled:opacity-50"
+                          title="Accept — moves to Matched Trips"
+                        >
+                          {isActing ? '…' : '✓'}
+                        </button>
+                        <button
+                          disabled={isActing}
+                          onClick={(e) => { e.stopPropagation(); handleRecDecline(match) }}
+                          className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-500 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition disabled:opacity-50"
+                          title="Decline"
+                        >
+                          {isActing ? '…' : '✗'}
+                        </button>
+                      </div>
+                    </motion.div>
+                  )
+                })}
+              </div>
+            )}
+
+            {recommendations.length > 5 && (
+              <div className="mt-auto pt-5 text-center">
+                <Link to="/suggestions" className="text-sm text-indigo-600 font-semibold hover:text-indigo-800 transition">
+                  View all {recommendations.length} recommendations →
+                </Link>
+              </div>
+            )}
           </motion.div>
         </div>
       </main>

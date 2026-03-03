@@ -20,8 +20,6 @@ interface TripItem {
   description: string | null
 }
 
-type StatusFilter = 'all' | 'planned' | 'completed' | 'cancelled'
-
 /* ── helpers ── */
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 24 },
@@ -35,14 +33,10 @@ const modeEmoji: Record<string, string> = {
   ship: '🛳️', bicycle: '🚲', walking: '🚶', other: '🧳',
 }
 
-const STATUS_CONFIG: Record<string, { label: string; emoji: string; bg: string; text: string; ring: string; dot: string }> = {
-  planned:   { label: 'Planned',   emoji: '📋', bg: 'bg-blue-50',    text: 'text-blue-700',    ring: 'ring-blue-300',    dot: 'bg-blue-500' },
-  completed: { label: 'Completed', emoji: '✅', bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-emerald-300', dot: 'bg-emerald-500' },
-  cancelled: { label: 'Cancelled', emoji: '❌', bg: 'bg-gray-50',    text: 'text-gray-600',    ring: 'ring-gray-300',    dot: 'bg-gray-400' },
-}
 
-/* Seed usernames used as fallback when a trip has no username */
-const SEED_USERNAMES = ['anna_lee', 'ben_stone', 'chris_miller', 'diana_wong', 'ethan_kim']
+
+/* Fallback username when a trip has no username */
+const FALLBACK_USERNAME = 'traveler'
 
 const LS_SHORTLIST_KEY = 'routed_shortlisted'
 const LS_INTERESTED_KEY = 'routed_interested'
@@ -54,7 +48,6 @@ const Explore: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [selectedTrip, setSelectedTrip] = useState<TripItem | null>(null)
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set())
   const [interestedIds, setInterestedIds] = useState<Set<string>>(new Set())
   const navigate = useNavigate()
@@ -75,10 +68,9 @@ const Explore: React.FC = () => {
   }
 
   /* ── Helper: get display username for a trip ── */
-  const getDisplayUsername = (trip: TripItem, index: number): string => {
+  const getDisplayUsername = (trip: TripItem): string => {
     if (trip.username) return trip.username
-    // Deterministic seed fallback based on trip id or index
-    return SEED_USERNAMES[index % SEED_USERNAMES.length]
+    return FALLBACK_USERNAME
   }
 
   /* ── Load trips from API ── */
@@ -105,7 +97,7 @@ const Explore: React.FC = () => {
     setInterestedIds(new Set(savedInterested))
   }, [])
 
-  /* ── Filter trips by search + status ── */
+  /* ── Filter trips by search ── */
   let filtered = searchQuery.trim()
     ? trips.filter(
         (t) =>
@@ -115,17 +107,6 @@ const Explore: React.FC = () => {
           t.interests.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
       )
     : trips
-
-  if (statusFilter !== 'all') {
-    filtered = filtered.filter((t) => t.status === statusFilter)
-  }
-
-  /* ── Status counts ── */
-  const statusCounts = {
-    planned: trips.filter((t) => t.status === 'planned').length,
-    completed: trips.filter((t) => t.status === 'completed').length,
-    cancelled: trips.filter((t) => t.status === 'cancelled').length,
-  }
 
   /* ── Plan similar trip → pre-fill Dashboard form ── */
   const planSimilarTrip = (trip: TripItem) => {
@@ -249,23 +230,13 @@ const Explore: React.FC = () => {
           <motion.div {...fadeUp(0.1)} className="text-center py-20">
             <span className="text-6xl mb-4 block">✈️</span>
             <h3 className="text-xl font-bold text-gray-900 mb-2">
-              {searchQuery || statusFilter !== 'all' ? 'No matching trips' : 'No trips to explore yet'}
+              {searchQuery ? 'No matching trips' : 'No trips to explore yet'}
             </h3>
             <p className="text-gray-500 max-w-md mx-auto">
               {searchQuery
                 ? `Nothing matches "${searchQuery}". Try a different search term.`
-                : statusFilter !== 'all'
-                ? `No ${statusFilter} trips found. Try a different filter.`
                 : 'Trips from other travelers will appear here. Check back soon!'}
             </p>
-            {statusFilter !== 'all' && (
-              <button
-                onClick={() => setStatusFilter('all')}
-                className="mt-4 text-sm text-indigo-600 hover:text-indigo-800 font-semibold transition"
-              >
-                ← Show all trips
-              </button>
-            )}
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -274,8 +245,7 @@ const Explore: React.FC = () => {
                 ? trip.modeOfTravel.charAt(0).toUpperCase() + trip.modeOfTravel.slice(1)
                 : null
               const mIcon = trip.modeOfTravel ? (modeEmoji[trip.modeOfTravel] || '🧳') : null
-              const sc = STATUS_CONFIG[trip.status]
-              const displayName = getDisplayUsername(trip, i)
+              const displayName = getDisplayUsername(trip)
               const currentUser = getCurrentUser()
               const isOwnTrip = currentUser && trip.userId === currentUser.id
               const isShortlisted = shortlistedIds.has(trip.id)
@@ -313,12 +283,6 @@ const Explore: React.FC = () => {
                           📅 {new Date(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {new Date(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </p>
                       </div>
-                      {/* Status badge — only show when logged in */}
-                      {isLoggedIn() && sc && (
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full shrink-0 ${sc.bg} ${sc.text}`}>
-                          {sc.label}
-                        </span>
-                      )}
                     </div>
 
                     {/* Detail chips */}
@@ -358,8 +322,8 @@ const Explore: React.FC = () => {
                       >
                         View More
                       </button>
-                      {/* Plan a similar trip — only for completed trips when logged in */}
-                      {isLoggedIn() && trip.status === 'completed' && (
+                      {/* Plan a similar trip — only when logged in */}
+                      {isLoggedIn() && (
                         <>
                           <span className="text-gray-200">|</span>
                           <button
@@ -402,59 +366,6 @@ const Explore: React.FC = () => {
           </div>
         )}
       </main>
-
-      {/* ═══════ FLOATING STATUS FILTER TAGS — only when logged in ═══════ */}
-      <AnimatePresence>
-        {isLoggedIn() && !loading && (
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 200 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/80 px-3 py-2.5"
-          >
-            {/* All trips button */}
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all ${
-                statusFilter === 'all'
-                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              🌍 All
-              <span className={`ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                statusFilter === 'all' ? 'bg-white/25 text-white' : 'bg-gray-200 text-gray-600'
-              }`}>{trips.length}</span>
-            </button>
-
-            <div className="w-px h-6 bg-gray-200" />
-
-            {/* Status filter buttons */}
-            {(['planned', 'completed', 'cancelled'] as const).map((s) => {
-              const cfg = STATUS_CONFIG[s]
-              const count = statusCounts[s]
-              const active = statusFilter === s
-              return (
-                <button
-                  key={s}
-                  onClick={() => setStatusFilter(active ? 'all' : s)}
-                  className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-xl transition-all ${
-                    active
-                      ? `${cfg.bg} ${cfg.text} ring-2 ${cfg.ring} shadow-sm`
-                      : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-                  }`}
-                >
-                  {cfg.emoji} {cfg.label}
-                  <span className={`ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                    active ? `${cfg.bg} ${cfg.text}` : 'bg-gray-200 text-gray-600'
-                  }`}>{count}</span>
-                </button>
-              )
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* ═══════ TRIP DETAIL MODAL ═══════ */}
       <AnimatePresence>
@@ -506,19 +417,10 @@ const Explore: React.FC = () => {
                       {/* Creator badge */}
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
                         <span className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-[9px] text-white font-bold">
-                          {getDisplayUsername(selectedTrip, trips.indexOf(selectedTrip)).charAt(0).toUpperCase()}
+                          {getDisplayUsername(selectedTrip).charAt(0).toUpperCase()}
                         </span>
-                        @{getDisplayUsername(selectedTrip, trips.indexOf(selectedTrip))}
+                        @{getDisplayUsername(selectedTrip)}
                       </span>
-                      {(() => {
-                        const sc = STATUS_CONFIG[selectedTrip.status]
-                        return sc ? (
-                          <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${sc.bg} ${sc.text}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
-                            {sc.label}
-                          </span>
-                        ) : null
-                      })()}
                     </div>
                   </div>
                 </div>
@@ -613,7 +515,7 @@ const Explore: React.FC = () => {
                       {interestedIds.has(selectedTrip.id) ? '❤️ Interested' : '🤍 I\'m Interested'}
                     </button>
                   )}
-                  {selectedTrip.status === 'completed' && (
+                  {isLoggedIn() && (
                     <motion.button
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
@@ -668,7 +570,7 @@ const Explore: React.FC = () => {
               <span className="text-5xl mb-4 block">🔒</span>
               <h3 className="text-2xl font-extrabold text-gray-900 mb-2">Please Sign In</h3>
               <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                Sign in or create an account to explore trip details, filter by status, and plan your own trips.
+                Sign in or create an account to explore trip details and plan your own trips.
               </p>
 
               <div className="flex flex-col gap-3">

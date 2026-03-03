@@ -21,7 +21,7 @@ const Sidebar: React.FC = () => {
         <div className="space-y-1">
           <Item to="/dashboard">🏠 Dashboard</Item>
           <Item to="/trips">🧳 My trips</Item>
-          <Item to="/suggestions">💡 Suggestions</Item>
+          <Item to="/suggestions">💡 Recommendations</Item>
           <Item to="/matches">🤝 Matches</Item>
         </div>
       </nav>
