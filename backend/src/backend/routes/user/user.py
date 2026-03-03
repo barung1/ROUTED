@@ -6,13 +6,20 @@ from backend.config.env_vars import load_env_variables
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 import hashlib
 import secrets 
 from datetime import timedelta
 
 from backend.config.db import get_db_session
-from backend.api_models.user import LoginUserModel, RegistrationUserModel, UpdateUserModel, UserPublicModel, LoginResponseModel
+from backend.api_models.user import (
+	LoginUserModel,
+	RegistrationUserModel,
+	UpdateUserModel,
+	UserPublicModel,
+	LoginResponseModel,
+	UserProfileModel,
+)
 from backend.models.user import User
 from backend.loggers.logger import get_logger # type: ignore
 from backend.auth.jwt import create_access_token, get_current_user_id
@@ -75,6 +82,21 @@ def _verify_password(stored_password: str, provided_password: str) -> bool:
 		logger.error(f"Error verifying password: {e}")
 		return False
 
+
+def _to_user_public(user: User) -> UserPublicModel:
+	return UserPublicModel(
+		id=user.id,
+		username=user.username,
+		email=user.email,
+		firstName=user.first_name,
+		lastName=user.last_name,
+		location=user.location,
+		dateOfBirth=user.date_of_birth,
+		interests=user.interests or [],
+		bio=user.bio,
+		dateJoined=user.date_joined,
+	)
+
 @router.post("/register", status_code=status.HTTP_201_CREATED, response_model=UserPublicModel)
 def register_user(user: RegistrationUserModel, db: Session = Depends(get_db_session)):
 	if os.getenv("DEV_MODE", "False").lower() == "true":
@@ -103,6 +125,10 @@ def register_user(user: RegistrationUserModel, db: Session = Depends(get_db_sess
 		first_name=user.firstName,
 		last_name=user.lastName,
 		hashed_password=_hash_password(user.password),
+		location=user.location,
+		date_of_birth=user.dateOfBirth,
+		interests=user.interests,
+		bio=user.bio,
 	)
 	db.add(new_user)
 	try:
@@ -115,12 +141,33 @@ def register_user(user: RegistrationUserModel, db: Session = Depends(get_db_sess
 		)
 	db.refresh(new_user)
 
-	return UserPublicModel(
-		id=new_user.id,
-		username=new_user.username,
-		email=new_user.email,
-		firstName=new_user.first_name,
-		lastName=new_user.last_name,
+	return _to_user_public(new_user)
+
+
+@router.get("/me", response_model=UserProfileModel)
+def get_my_profile(
+	user_id: UUID = Depends(get_current_user_id),
+	db: Session = Depends(get_db_session),
+) -> UserProfileModel:
+	user = db.execute(
+		select(User).where(User.id == user_id).options(selectinload(User.trips))
+	).scalars().first()
+	if not user:
+		raise HTTPException(
+			status_code=status.HTTP_404_NOT_FOUND,
+			detail="User not found",
+		)
+
+	return UserProfileModel(
+		id=user.id,
+		username=user.username,
+		email=user.email,
+		location=user.location,
+		dateOfBirth=user.date_of_birth,
+		interests=user.interests or [],
+		bio=user.bio,
+		tripsCount=len(user.trips or []),
+		memberSince=user.date_joined,
 	)
 
 @router.get("/{user_id}", response_model=UserPublicModel)
@@ -137,6 +184,11 @@ def get_user_by_id(user_id: UUID, db: Session = Depends(get_db_session)) -> User
 		email=user.email,
 		firstName=user.first_name,
 		lastName=user.last_name,
+		location=user.location,
+		dateOfBirth=user.date_of_birth,
+		interests=user.interests or [],
+		bio=user.bio,
+		dateJoined=user.date_joined,
 	)
 
 @router.delete("/me")
@@ -174,6 +226,21 @@ def update_user(update: UpdateUserModel, user_id: UUID = Depends(get_current_use
 				status_code=status.HTTP_404_NOT_FOUND,
 				detail="User not found",
 			)
+		if update.username is not None:
+			if not _valid_username(update.username):
+				raise HTTPException(
+					status_code=status.HTTP_400_BAD_REQUEST,
+					detail="Username must be 3-30 characters long and contain only alphanumeric characters",
+				)
+			existing_username_user = db.execute(
+				select(User).where(User.username == update.username, User.id != user_id)
+			).scalars().first()
+			if existing_username_user:
+				raise HTTPException(
+					status_code=status.HTTP_409_CONFLICT,
+					detail="Username already registered",
+				)
+			user.username = update.username
 		if update.email is not None:
 			user.email = update.email
 		if update.password is not None:
@@ -187,14 +254,22 @@ def update_user(update: UpdateUserModel, user_id: UUID = Depends(get_current_use
 			user.first_name = update.firstName
 		if update.lastName is not None:
 			user.last_name = update.lastName
+		if update.location is not None:
+			user.location = update.location
+		if update.dateOfBirth is not None:
+			user.date_of_birth = update.dateOfBirth
+		if update.interests is not None:
+			user.interests = update.interests
+		if update.bio is not None:
+			user.bio = update.bio
 		db.commit()
 		db.refresh(user)
-		return UserPublicModel(
-			id=user.id,
-			username=user.username,
-			email=user.email,
-			firstName=user.first_name,
-			lastName=user.last_name,
+		return _to_user_public(user)
+	except IntegrityError:
+		db.rollback()
+		raise HTTPException(
+			status_code=status.HTTP_409_CONFLICT,
+			detail="Username or email already registered",
 		)
 	except HTTPException:
 		raise
@@ -237,13 +312,7 @@ def login_user(credentials: LoginUserModel, db: Session = Depends(get_db_session
 		expires_delta=access_token_expires
 	)
 	
-	user_public = UserPublicModel(
-		id=user.id,
-		username=user.username,
-		email=user.email,
-		firstName=user.first_name,
-		lastName=user.last_name,
-	)
+	user_public = _to_user_public(user)
 	
 	return LoginResponseModel(
 		access_token=access_token,

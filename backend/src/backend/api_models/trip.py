@@ -33,6 +33,7 @@ class TripUpdateModel(BaseModel):
 class TripPublicModel(BaseModel):
 	id: UUID
 	userId: UUID | None = None
+	userName: str | None = None
 	locationId: UUID
 	startDate: date
 	endDate: date

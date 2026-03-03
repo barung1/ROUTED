@@ -45,6 +45,7 @@ def _to_public(trip: Trip) -> TripPublicModel:
 	return TripPublicModel(
 		id=trip.id,
 		userId=trip.user.id if trip.user else None,
+		userName=trip.user_name or (trip.user.username if trip.user else None),
 		locationId=trip.location_id,
 		startDate=trip.start_date,
 		endDate=trip.end_date,
@@ -107,6 +108,7 @@ def create_trip(
 		start_date=trip.startDate,
 		end_date=trip.endDate,
 		status=trip.status or TripStatus.PLANNED,
+		user_name=user.username,
 		from_place=trip.fromPlace,
 		to_place=trip.toPlace,
 		mode_of_travel=trip.modeOfTravel,

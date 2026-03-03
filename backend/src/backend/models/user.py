@@ -2,7 +2,7 @@
 from datetime import date
 from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
-from sqlalchemy import String, text
+from sqlalchemy import String, JSON, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, relationship, mapped_column
 from backend.models.Base import Base
@@ -33,5 +33,8 @@ class User(Base):
 	)
 	date_joined:Mapped[date] = mapped_column(nullable=False, server_default=text("CURRENT_DATE"))
 	date_of_birth: Mapped[date] = mapped_column(nullable=True)
+	location: Mapped[str | None] = mapped_column(String, nullable=True)
+	interests: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+	bio: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
