@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import logo from '../assets/logo.png'
+import api from '../api/client'
+
+/* ── types ── */
 
 /* ── constants ── */
 const CURRENCIES = [
@@ -51,11 +54,30 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const greeting = getGreeting()
+  const [creatingTrip, setCreatingTrip] = useState(false)
 
-  /* auto-open trip form when navigated from Trips page */
+  /* auto-open trip form when navigated from Trips page or Explore page */
   useEffect(() => {
-    if ((location.state as any)?.openTripForm) {
+    const state = location.state as any
+    if (state?.openTripForm) {
       setTripFormOpen(true)
+
+      // If prefillTrip data is passed (from Explore's "Plan a similar trip"), fill the form
+      if (state.prefillTrip) {
+        const p = state.prefillTrip
+        setTripForm({
+          fromPlace: p.fromPlace || '',
+          toPlace: p.toPlace || '',
+          startDate: '',
+          endDate: '',
+          travelMode: p.travelMode || '',
+          budget: p.budget || '',
+          currency: 'USD',
+          interests: p.interests || '',
+          description: p.description || '',
+        })
+      }
+
       // clear the state so refreshing won't re-open the form
       window.history.replaceState({}, '')
     }
@@ -75,6 +97,7 @@ const Dashboard: React.FC = () => {
     localStorage.removeItem('routed_token')
     localStorage.removeItem('routed_shortlisted')
     localStorage.removeItem('routed_my_trips')
+  localStorage.removeItem('routed_user')
     navigate('/')
   }
 
@@ -82,17 +105,44 @@ const Dashboard: React.FC = () => {
     setTripForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const handleCreateTrip = () => {
-    const newTrip = {
-      id: crypto.randomUUID(),
-      ...tripForm,
-      status: 'planned' as const,
+  const handleCreateTrip = async () => {
+    if (!tripForm.startDate || !tripForm.endDate) {
+      alert('Please select a date range.')
+      return
     }
-    const existing = JSON.parse(localStorage.getItem('routed_my_trips') || '[]')
-    localStorage.setItem('routed_my_trips', JSON.stringify([newTrip, ...existing]))
-    console.log('Trip created:', newTrip)
-    setTripForm({ ...emptyForm })
-    setTripFormOpen(false)
+    setCreatingTrip(true)
+    try {
+      const payload = {
+        startDate: tripForm.startDate,
+        endDate: tripForm.endDate,
+        fromPlace: tripForm.fromPlace || null,
+        toPlace: tripForm.toPlace || null,
+        modeOfTravel: tripForm.travelMode ? tripForm.travelMode.toLowerCase() : null,
+        budget: tripForm.budget ? parseFloat(tripForm.budget) : null,
+        interests: tripForm.interests ? tripForm.interests.split(',').map((s) => s.trim()).filter(Boolean) : [],
+        description: tripForm.description || null,
+      }
+      const res = await api.post('/trips/', payload)
+      console.log('Trip created via API:', res.data)
+      // Persist the created trip locally (keep backend response shape)
+      const existing = JSON.parse(localStorage.getItem('routed_my_trips') || '[]')
+      // Attach username if available from stored user (fallback to backend user id)
+      const storedUser = (() => {
+        try {
+          return JSON.parse(localStorage.getItem('routed_user') || 'null')
+        } catch { return null }
+      })()
+      const tripWithUser = { ...(res.data || {}), username: storedUser?.username || undefined }
+      localStorage.setItem('routed_my_trips', JSON.stringify([tripWithUser, ...existing]))
+      setTripForm({ ...emptyForm })
+      setTripFormOpen(false)
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || 'Failed to create trip. Please try again.'
+      alert(detail)
+      console.error('Create trip error:', err)
+    } finally {
+      setCreatingTrip(false)
+    }
   }
 
   /* ── render ── */
@@ -298,9 +348,10 @@ const Dashboard: React.FC = () => {
                           whileHover={{ scale: 1.03 }}
                           whileTap={{ scale: 0.97 }}
                           onClick={handleCreateTrip}
-                          className="px-5 py-2 text-sm rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                          disabled={creatingTrip}
+                          className="px-5 py-2 text-sm rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          Create Trip
+                          {creatingTrip ? 'Creating…' : 'Create Trip'}
                         </motion.button>
                       </div>
                     </motion.div>

@@ -5,7 +5,7 @@ from backend.models.trip import TripStatus, TravelMode
 
 
 class TripCreateModel(BaseModel):
-	locationId: UUID
+	locationId: UUID | None = None
 	startDate: date
 	endDate: date
 	status: TripStatus | None = TripStatus.PLANNED
@@ -33,7 +33,8 @@ class TripUpdateModel(BaseModel):
 class TripPublicModel(BaseModel):
 	id: UUID
 	userId: UUID | None = None
-	locationId: UUID
+	username: str | None = None
+	locationId: UUID | None = None
 	startDate: date
 	endDate: date
 	status: TripStatus
