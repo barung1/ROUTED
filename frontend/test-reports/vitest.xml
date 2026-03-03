@@ -1,85 +1,85 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuites name="vitest tests" tests="135" failures="0" errors="0" time="11.45477779">
-    <testsuite name="src/__tests__/App.test.tsx" timestamp="2026-03-03T23:09:58.738Z" hostname="Baruns-MacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.114681">
-        <testcase classname="src/__tests__/App.test.tsx" name="App &gt; renders without crashing" time="0.032061709">
+<testsuites name="vitest tests" tests="142" failures="0" errors="0" time="10.435198083">
+    <testsuite name="src/__tests__/App.test.tsx" timestamp="2026-03-03T23:44:21.534Z" hostname="Baruns-MacBook-Air.local" tests="3" failures="0" errors="0" skipped="0" time="0.068562125">
+        <testcase classname="src/__tests__/App.test.tsx" name="App &gt; renders without crashing" time="0.040432583">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
             </system-err>
         </testcase>
-        <testcase classname="src/__tests__/App.test.tsx" name="App &gt; renders the sidebar" time="0.072329625">
+        <testcase classname="src/__tests__/App.test.tsx" name="App &gt; renders the sidebar" time="0.01626375">
         </testcase>
-        <testcase classname="src/__tests__/App.test.tsx" name="App &gt; renders the landing page at root route" time="0.00914325">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/api/__tests__/client.test.ts" timestamp="2026-03-03T23:09:58.739Z" hostname="Baruns-MacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.002299291">
-        <testcase classname="src/api/__tests__/client.test.ts" name="API Client &gt; should export a default axios instance" time="0.000989583">
-        </testcase>
-        <testcase classname="src/api/__tests__/client.test.ts" name="API Client &gt; should have a baseURL set" time="0.000100833">
-        </testcase>
-        <testcase classname="src/api/__tests__/client.test.ts" name="API Client &gt; should have request interceptors configured" time="0.000082083">
-        </testcase>
-        <testcase classname="src/api/__tests__/client.test.ts" name="API Client &gt; interceptor adds Authorization header when token exists" time="0.000203875">
-        </testcase>
-        <testcase classname="src/api/__tests__/client.test.ts" name="API Client &gt; interceptor does not add Authorization header when no token" time="0.000080834">
+        <testcase classname="src/__tests__/App.test.tsx" name="App &gt; renders the landing page at root route" time="0.010864334">
         </testcase>
     </testsuite>
-    <testsuite name="src/components/__tests__/Header.test.tsx" timestamp="2026-03-03T23:09:58.740Z" hostname="Baruns-MacBook-Air.local" tests="6" failures="0" errors="0" skipped="0" time="0.072387083">
-        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; renders the logo with alt text" time="0.038856333">
+    <testsuite name="src/api/__tests__/client.test.ts" timestamp="2026-03-03T23:44:21.535Z" hostname="Baruns-MacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.002159083">
+        <testcase classname="src/api/__tests__/client.test.ts" name="API Client &gt; should export a default axios instance" time="0.000765875">
+        </testcase>
+        <testcase classname="src/api/__tests__/client.test.ts" name="API Client &gt; should have a baseURL set" time="0.000171916">
+        </testcase>
+        <testcase classname="src/api/__tests__/client.test.ts" name="API Client &gt; should have request interceptors configured" time="0.00015625">
+        </testcase>
+        <testcase classname="src/api/__tests__/client.test.ts" name="API Client &gt; interceptor adds Authorization header when token exists" time="0.000191084">
+        </testcase>
+        <testcase classname="src/api/__tests__/client.test.ts" name="API Client &gt; interceptor does not add Authorization header when no token" time="0.000233833">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/components/__tests__/Header.test.tsx" timestamp="2026-03-03T23:44:21.536Z" hostname="Baruns-MacBook-Air.local" tests="6" failures="0" errors="0" skipped="0" time="0.057662625">
+        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; renders the logo with alt text" time="0.0288275">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
             </system-err>
         </testcase>
-        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; renders Login and Sign up links" time="0.005465667">
+        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; renders Login and Sign up links" time="0.00691">
         </testcase>
-        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; Login link points to /login" time="0.004826458">
+        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; Login link points to /login" time="0.0062925">
         </testcase>
-        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; Sign up link points to /signup" time="0.009742833">
+        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; Sign up link points to /signup" time="0.002537041">
         </testcase>
-        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; renders the Explore Trips button" time="0.006699667">
+        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; renders the Explore Trips button" time="0.00265775">
         </testcase>
-        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; has a home link on the logo" time="0.004319125">
+        <testcase classname="src/components/__tests__/Header.test.tsx" name="Header &gt; has a home link on the logo" time="0.009042333">
         </testcase>
     </testsuite>
-    <testsuite name="src/components/__tests__/Landing.test.tsx" timestamp="2026-03-03T23:09:58.740Z" hostname="Baruns-MacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.0829165">
-        <testcase classname="src/components/__tests__/Landing.test.tsx" name="Landing &gt; renders landing headline" time="0.04227775">
+    <testsuite name="src/components/__tests__/Landing.test.tsx" timestamp="2026-03-03T23:44:21.536Z" hostname="Baruns-MacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.116950584">
+        <testcase classname="src/components/__tests__/Landing.test.tsx" name="Landing &gt; renders landing headline" time="0.043552833">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
             </system-err>
         </testcase>
-        <testcase classname="src/components/__tests__/Landing.test.tsx" name="Landing &gt; renders Login and Sign up action links" time="0.010165209">
+        <testcase classname="src/components/__tests__/Landing.test.tsx" name="Landing &gt; renders Login and Sign up action links" time="0.048875958">
         </testcase>
-        <testcase classname="src/components/__tests__/Landing.test.tsx" name="Landing &gt; renders the features carousel section" time="0.00647475">
+        <testcase classname="src/components/__tests__/Landing.test.tsx" name="Landing &gt; renders the features carousel section" time="0.008845375">
         </testcase>
-        <testcase classname="src/components/__tests__/Landing.test.tsx" name="Landing &gt; renders the first feature card" time="0.008628583">
+        <testcase classname="src/components/__tests__/Landing.test.tsx" name="Landing &gt; renders the first feature card" time="0.005089084">
         </testcase>
-        <testcase classname="src/components/__tests__/Landing.test.tsx" name="Landing &gt; renders carousel navigation" time="0.013739125">
+        <testcase classname="src/components/__tests__/Landing.test.tsx" name="Landing &gt; renders carousel navigation" time="0.008925083">
         </testcase>
     </testsuite>
-    <testsuite name="src/components/__tests__/Sidebar.test.tsx" timestamp="2026-03-03T23:09:58.741Z" hostname="Baruns-MacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.064510041">
-        <testcase classname="src/components/__tests__/Sidebar.test.tsx" name="Sidebar &gt; renders the brand name" time="0.03907275">
+    <testsuite name="src/components/__tests__/Sidebar.test.tsx" timestamp="2026-03-03T23:44:21.537Z" hostname="Baruns-MacBook-Air.local" tests="5" failures="0" errors="0" skipped="0" time="0.059047">
+        <testcase classname="src/components/__tests__/Sidebar.test.tsx" name="Sidebar &gt; renders the brand name" time="0.037127125">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
             </system-err>
         </testcase>
-        <testcase classname="src/components/__tests__/Sidebar.test.tsx" name="Sidebar &gt; renders all navigation items" time="0.004832542">
+        <testcase classname="src/components/__tests__/Sidebar.test.tsx" name="Sidebar &gt; renders all navigation items" time="0.006180583">
         </testcase>
-        <testcase classname="src/components/__tests__/Sidebar.test.tsx" name="Sidebar &gt; navigation links point to correct paths" time="0.012001709">
+        <testcase classname="src/components/__tests__/Sidebar.test.tsx" name="Sidebar &gt; navigation links point to correct paths" time="0.008593333">
         </testcase>
-        <testcase classname="src/components/__tests__/Sidebar.test.tsx" name="Sidebar &gt; renders version number" time="0.00345425">
+        <testcase classname="src/components/__tests__/Sidebar.test.tsx" name="Sidebar &gt; renders version number" time="0.003441334">
         </testcase>
-        <testcase classname="src/components/__tests__/Sidebar.test.tsx" name="Sidebar &gt; highlights the active route" time="0.003464583">
+        <testcase classname="src/components/__tests__/Sidebar.test.tsx" name="Sidebar &gt; highlights the active route" time="0.002718875">
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/__tests__/Dashboard.test.tsx" timestamp="2026-03-03T23:09:58.741Z" hostname="Baruns-MacBook-Air.local" tests="22" failures="0" errors="0" skipped="0" time="1.422491667">
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders a greeting based on time of day" time="0.057711541">
+    <testsuite name="src/pages/__tests__/Dashboard.test.tsx" timestamp="2026-03-03T23:44:21.537Z" hostname="Baruns-MacBook-Air.local" tests="22" failures="0" errors="0" skipped="0" time="1.28783525">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders a greeting based on time of day" time="0.053418583">
             <system-err>
 React does not recognize the `whileHover` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `whilehover` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
 React does not recognize the `whileTap` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `whiletap` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
@@ -88,51 +88,51 @@ React does not recognize the `whileTap` prop on a DOM element. If you intentiona
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders the Add a New Trip button" time="0.056072458">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders the Add a New Trip button" time="0.028252791">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders the Routed logo" time="0.014648708">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders the Routed logo" time="0.027337542">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; loads recommendations from API when logged in" time="0.013016208">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; loads recommendations from API when logged in" time="0.070764625">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; does not load recommendations when not logged in" time="0.013216292">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; does not load recommendations when not logged in" time="0.067364291">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders profile dropdown area" time="0.011573541">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders profile dropdown area" time="0.011811083">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders all four tabs (Recs, Received, Given, Messages)" time="0.015999542">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders all four tabs (Recs, Received, Given, Messages)" time="0.026760625">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; shows &quot;No pending recommendations&quot; when there are no pending matches" time="0.03455625">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; shows &quot;No pending recommendations&quot; when there are no pending matches" time="0.037518583">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders recommendation cards for pending matches" time="0.102437709">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; renders recommendation cards for pending matches" time="0.047927125">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; can switch to the Received tab" time="0.243466084">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; can switch to the Received tab" time="0.192077083">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; displays received interests from localStorage" time="0.04966725">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; displays received interests from localStorage" time="0.041376709">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; can switch to the Given tab and shows empty state" time="0.06952925">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; can switch to the Given tab and shows empty state" time="0.075223">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; displays given interests with status badges" time="0.046985292">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; displays given interests with status badges" time="0.066015792">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; can switch to Messages tab and shows empty state" time="0.038829">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; can switch to Messages tab and shows empty state" time="0.040638292">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; generates match messages for both_accepted matches from API" time="0.076299583">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; generates match messages for both_accepted matches from API" time="0.0685085">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; generates match messages for rejected matches from API" time="0.113065292">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; generates match messages for rejected matches from API" time="0.054017833">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; calls accept API when clicking accept on a recommendation" time="0.078194">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; calls accept API when clicking accept on a recommendation" time="0.059580833">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; calls decline API when clicking decline on a recommendation" time="0.06948">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; calls decline API when clicking decline on a recommendation" time="0.060807">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; clears routed_match_messages on logout" time="0.113351">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; clears routed_match_messages on logout" time="0.113095958">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; auto-selects Received tab when there are received interests and no recommendations" time="0.0228285">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; auto-selects Received tab when there are received interests and no recommendations" time="0.019198459">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; accepts an interest and switches to Messages tab" time="0.082120583">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; accepts an interest and switches to Messages tab" time="0.082759792">
         </testcase>
-        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; declines an interest" time="0.096286166">
+        <testcase classname="src/pages/__tests__/Dashboard.test.tsx" name="Dashboard &gt; declines an interest" time="0.041025417">
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/__tests__/Explore.test.tsx" timestamp="2026-03-03T23:09:58.743Z" hostname="Baruns-MacBook-Air.local" tests="13" failures="0" errors="0" skipped="0" time="0.79787025">
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; renders the Explore page" time="0.243484709">
+    <testsuite name="src/pages/__tests__/Explore.test.tsx" timestamp="2026-03-03T23:44:21.539Z" hostname="Baruns-MacBook-Air.local" tests="13" failures="0" errors="0" skipped="0" time="0.798451458">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; renders the Explore page" time="0.321433917">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
@@ -159,7 +159,7 @@ This ensures that you&apos;re testing the behavior the user would see in the bro
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; renders a search input" time="0.012209791">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; renders a search input" time="0.0117285">
             <system-err>
 An update to Explore inside a test was not wrapped in act(...).
 
@@ -184,193 +184,187 @@ This ensures that you&apos;re testing the behavior the user would see in the bro
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; fetches trips from API on mount" time="0.007255541">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; fetches trips from API on mount" time="0.01923225">
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; displays trips returned by the API" time="0.034900917">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; displays trips returned by the API" time="0.102805792">
             <system-err>
 React does not recognize the `whileHover` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `whilehover` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; filters trips by search query when logged in" time="0.199074833">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; filters trips by search query when logged in" time="0.13173475">
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; shows empty state when no trips match search" time="0.006522708">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; shows empty state when no trips match search" time="0.009977333">
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; shows auth modal for unauthenticated actions" time="0.014867833">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; shows auth modal for unauthenticated actions" time="0.010188625">
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; shows &quot;I&apos;m Interested&quot; button when logged in and viewing another user&apos;s trip" time="0.014826625">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; shows &quot;I&apos;m Interested&quot; button when logged in and viewing another user&apos;s trip" time="0.013568917">
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; toggles interest on a trip and stores it in localStorage" time="0.047867666">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; toggles interest on a trip and stores it in localStorage" time="0.062039542">
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; shows ❤️ Interested after clicking interest button" time="0.0848675">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; shows ❤️ Interested after clicking interest button" time="0.041818417">
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; does not show interest button for own trips" time="0.0373045">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; does not show interest button for own trips" time="0.010939875">
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; loads pre-existing interests from localStorage on mount" time="0.02361925">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; loads pre-existing interests from localStorage on mount" time="0.008758958">
         </testcase>
-        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; can remove interest by clicking the button again" time="0.069569625">
+        <testcase classname="src/pages/__tests__/Explore.test.tsx" name="Explore &gt; can remove interest by clicking the button again" time="0.05041875">
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/__tests__/Login.test.tsx" timestamp="2026-03-03T23:09:58.743Z" hostname="Baruns-MacBook-Air.local" tests="10" failures="0" errors="0" skipped="0" time="1.227858125">
-        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; renders the login form heading" time="0.046306542">
+    <testsuite name="src/pages/__tests__/Login.test.tsx" timestamp="2026-03-03T23:44:21.540Z" hostname="Baruns-MacBook-Air.local" tests="10" failures="0" errors="0" skipped="0" time="1.2662155">
+        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; renders the login form heading" time="0.07057025">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; renders username and password fields" time="0.00983975">
+        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; renders username and password fields" time="0.059230209">
         </testcase>
-        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; renders the sign in button" time="0.210549791">
+        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; renders the sign in button" time="0.221749208">
         </testcase>
-        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; shows error when submitting empty form" time="0.072026667">
+        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; shows error when submitting empty form" time="0.082144542">
         </testcase>
-        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; allows typing in username and password fields" time="0.222345125">
+        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; allows typing in username and password fields" time="0.176843">
         </testcase>
-        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; toggles password visibility" time="0.047229917">
+        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; toggles password visibility" time="0.028672583">
         </testcase>
-        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; calls API on valid submission" time="0.2567125">
+        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; calls API on valid submission" time="0.24531175">
         </testcase>
-        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; stores token in localStorage on successful login" time="0.223163083">
+        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; stores token in localStorage on successful login" time="0.20226825">
         </testcase>
-        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; shows error message on API failure" time="0.132445334">
+        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; shows error message on API failure" time="0.166285833">
         </testcase>
-        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; renders link to sign up page" time="0.005061875">
+        <testcase classname="src/pages/__tests__/Login.test.tsx" name="Login &gt; renders link to sign up page" time="0.011499458">
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/__tests__/Matches.test.tsx" timestamp="2026-03-03T23:09:58.744Z" hostname="Baruns-MacBook-Air.local" tests="9" failures="0" errors="0" skipped="0" time="0.188885083">
-        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; renders the page" time="0.028145875">
+    <testsuite name="src/pages/__tests__/Matches.test.tsx" timestamp="2026-03-03T23:44:21.541Z" hostname="Baruns-MacBook-Air.local" tests="9" failures="0" errors="0" skipped="0" time="0.17747725">
+        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; renders the page" time="0.026325042">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; fetches matches from API when logged in" time="0.016434625">
+        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; fetches matches from API when logged in" time="0.018198042">
         </testcase>
-        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; displays matched travel partners" time="0.041914375">
+        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; displays matched travel partners" time="0.046586583">
             <system-err>
 React does not recognize the `whileHover` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `whilehover` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; only shows both_accepted matches (not pending or partial)" time="0.016160958">
+        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; only shows both_accepted matches (not pending or partial)" time="0.015748417">
         </testcase>
-        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; shows empty state when no matches and no interests" time="0.024024541">
+        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; shows empty state when no matches and no interests" time="0.022616083">
         </testcase>
-        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; displays accepted interest matches from localStorage" time="0.020628333">
+        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; displays accepted interest matches from localStorage" time="0.019233917">
         </testcase>
-        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; shows interest match count badge" time="0.015585375">
+        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; shows interest match count badge" time="0.010789375">
         </testcase>
-        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; does not show accepted interest matches for other users" time="0.01666825">
+        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; does not show accepted interest matches for other users" time="0.006143875">
         </testcase>
-        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; does not show pending interests in the matches page" time="0.007686625">
+        <testcase classname="src/pages/__tests__/Matches.test.tsx" name="Matches &gt; does not show pending interests in the matches page" time="0.010588042">
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/__tests__/Profile.test.tsx" timestamp="2026-03-03T23:09:58.745Z" hostname="Baruns-MacBook-Air.local" tests="22" failures="0" errors="0" skipped="0" time="3.0380485">
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; renders the profile page with default username" time="0.075837833">
+    <testsuite name="src/pages/__tests__/Profile.test.tsx" timestamp="2026-03-03T23:44:21.541Z" hostname="Baruns-MacBook-Air.local" tests="29" failures="0" errors="0" skipped="0" time="2.729097542">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; shows loading state then renders profile after fetch" time="0.075374541">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; displays the user email" time="0.024448667">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; fetches profile from GET /users/me on mount" time="0.015579667">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; renders all profile field labels" time="0.054886542">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; renders the profile page with username from API" time="0.080235333">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; shows placeholder text for empty fields" time="0.017130333">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; displays the user email from API" time="0.027602917">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; displays travel stats in the banner" time="0.0108705">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; renders all profile field labels" time="0.036697792">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters edit mode for username and saves" time="0.563795541">
-            <system-out>
-Saving username: JaneDoe
-
-            </system-out>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; displays travel stats in the banner" time="0.023444333">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; cancels username editing" time="0.239092875">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; displays bio from API" time="0.054554875">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters edit mode for email and shows input with current value" time="0.108724667">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; displays location from API" time="0.018719584">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; saves email editing and returns to view mode" time="0.096588416">
-            <system-out>
-Saving email: john.doe@example.com
-
-            </system-out>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; displays interests from API" time="0.035363167">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters edit mode for location and saves" time="0.331772">
-            <system-out>
-Saving location: Waterloo, Canada
-
-            </system-out>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; shows placeholder text for empty fields" time="0.022235042">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters edit mode for date of birth" time="0.065821708">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters edit mode for username and saves via API" time="0.451777709">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters edit mode for bio and saves" time="0.083039292">
-            <system-out>
-Saving bio: 
-
-            </system-out>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; cancels username editing" time="0.1234275">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; cancels bio editing" time="0.099362083">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters edit mode for email and shows input with current value" time="0.076629083">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters interest editing mode" time="0.067769875">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; saves email via PUT /users/me" time="0.09656125">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; adds a custom interest via typing" time="0.4013145">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters edit mode for location and saves via API" time="0.190633583">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; adds an interest from the dropdown list" time="0.227163375">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters edit mode for date of birth" time="0.053143084">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; removes an interest" time="0.317701708">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters edit mode for bio and saves via API" time="0.136306459">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; saves interests and returns to view mode" time="0.188160708">
-            <system-out>
-Saving interests: [ [32m&apos;Nightlife&apos;[39m ]
-
-            </system-out>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; cancels bio editing" time="0.127669667">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; opens profile picture menu on click" time="0.015074875">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; enters interest editing mode" time="0.0599725">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; logs out, clears localStorage, and navigates to home" time="0.025483333">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; adds a custom interest via typing" time="0.3477175">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; settings dropdown has Dashboard, My Trips, and Explore links" time="0.016217666">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; adds an interest from the dropdown list" time="0.14658125">
         </testcase>
-        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; renders Back to Dashboard link" time="0.004787625">
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; removes an interest" time="0.264511375">
+        </testcase>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; saves interests via PUT /users/me" time="0.193678541">
+        </testcase>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; opens profile picture menu on click" time="0.016008">
+        </testcase>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; logs out, clears localStorage, and navigates to home" time="0.023325083">
+        </testcase>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; settings dropdown has Dashboard, My Trips, and Explore links" time="0.015383833">
+        </testcase>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; renders Back to Dashboard link" time="0.004426542">
+        </testcase>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; redirects to login on 401 error" time="0.003677334">
+        </testcase>
+        <testcase classname="src/pages/__tests__/Profile.test.tsx" name="Profile &gt; shows error message on API failure" time="0.005179333">
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/__tests__/Signup.test.tsx" timestamp="2026-03-03T23:09:58.746Z" hostname="Baruns-MacBook-Air.local" tests="9" failures="0" errors="0" skipped="0" time="2.685213625">
-        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; renders the signup form heading" time="0.066334417">
+    <testsuite name="src/pages/__tests__/Signup.test.tsx" timestamp="2026-03-03T23:44:21.543Z" hostname="Baruns-MacBook-Air.local" tests="9" failures="0" errors="0" skipped="0" time="2.250911875">
+        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; renders the signup form heading" time="0.060841375">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; renders all required form fields" time="0.023060875">
+        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; renders all required form fields" time="0.022201875">
         </testcase>
-        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; renders optional fields" time="0.008512416">
+        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; renders optional fields" time="0.05662625">
         </testcase>
-        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; shows error when submitting empty form" time="0.303462458">
+        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; shows error when submitting empty form" time="0.297220458">
         </testcase>
-        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; shows error when passwords do not match" time="0.741637583">
+        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; shows error when passwords do not match" time="0.581580667">
         </testcase>
-        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; shows error when password is too short" time="0.497126042">
+        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; shows error when password is too short" time="0.412493208">
         </testcase>
-        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; calls API on valid submission" time="0.642631708">
+        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; calls API on valid submission" time="0.473174542">
         </testcase>
-        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; shows API error on failure" time="0.394982833">
+        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; shows API error on failure" time="0.340628667">
         </testcase>
-        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; has a link to login page" time="0.004948125">
-        </testcase>
-    </testsuite>
-    <testsuite name="src/pages/__tests__/Suggestions.test.tsx" timestamp="2026-03-03T23:09:58.747Z" hostname="Baruns-MacBook-Air.local" tests="2" failures="0" errors="0" skipped="0" time="0.044593625">
-        <testcase classname="src/pages/__tests__/Suggestions.test.tsx" name="Suggestions &gt; renders the heading" time="0.04057125">
-        </testcase>
-        <testcase classname="src/pages/__tests__/Suggestions.test.tsx" name="Suggestions &gt; renders the description text" time="0.001616834">
+        <testcase classname="src/pages/__tests__/Signup.test.tsx" name="Signup &gt; has a link to login page" time="0.004911417">
         </testcase>
     </testsuite>
-    <testsuite name="src/pages/__tests__/Trips.test.tsx" timestamp="2026-03-03T23:09:58.747Z" hostname="Baruns-MacBook-Air.local" tests="24" failures="0" errors="0" skipped="0" time="1.713023">
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; renders the page heading" time="0.218453125">
+    <testsuite name="src/pages/__tests__/Suggestions.test.tsx" timestamp="2026-03-03T23:44:21.544Z" hostname="Baruns-MacBook-Air.local" tests="2" failures="0" errors="0" skipped="0" time="0.022687833">
+        <testcase classname="src/pages/__tests__/Suggestions.test.tsx" name="Suggestions &gt; renders the heading" time="0.019234709">
+        </testcase>
+        <testcase classname="src/pages/__tests__/Suggestions.test.tsx" name="Suggestions &gt; renders the description text" time="0.002550875">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/__tests__/Trips.test.tsx" timestamp="2026-03-03T23:44:21.544Z" hostname="Baruns-MacBook-Air.local" tests="24" failures="0" errors="0" skipped="0" time="1.598139958">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; renders the page heading" time="0.298398667">
             <system-err>
 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
@@ -397,7 +391,7 @@ This ensures that you&apos;re testing the behavior the user would see in the bro
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; renders My Trips and Shortlisted tabs" time="0.056458792">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; renders My Trips and Shortlisted tabs" time="0.067256583">
             <system-err>
 An update to Trips inside a test was not wrapped in act(...).
 
@@ -422,13 +416,13 @@ This ensures that you&apos;re testing the behavior the user would see in the bro
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows empty state when no trips exist" time="0.02052025">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows empty state when no trips exist" time="0.018394375">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; fetches trips from API on mount" time="0.029598459">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; fetches trips from API on mount" time="0.019242542">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; can switch between My Trips and Shortlisted tabs" time="0.125974875">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; can switch between My Trips and Shortlisted tabs" time="0.101179">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; renders trip items from API data" time="0.014554">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; renders trip items from API data" time="0.010923875">
             <system-err>
 Received `true` for a non-boolean attribute `layout`.
 
@@ -436,41 +430,41 @@ If you want to write it to the DOM, pass a string instead: layout=&quot;true&quo
 
             </system-err>
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; falls back to localStorage on API error" time="0.015223875">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; falls back to localStorage on API error" time="0.017640167">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; displays trip status badge" time="0.015619416">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; displays trip status badge" time="0.020529291">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; displays travel mode, budget, and interests chips" time="0.013398375">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; displays travel mode, budget, and interests chips" time="0.020784042">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows username badge on trip card" time="0.020928083">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows username badge on trip card" time="0.033701292">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows and hides trip description on toggle" time="0.117341208">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows and hides trip description on toggle" time="0.051179625">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; removes a trip from the list and calls API delete" time="0.045062042">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; removes a trip from the list and calls API delete" time="0.088377125">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; updates localStorage when a trip is removed" time="0.050293792">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; updates localStorage when a trip is removed" time="0.06825625">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; opens edit form when Edit button is clicked" time="0.057080958">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; opens edit form when Edit button is clicked" time="0.040608875">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; cancels editing and returns to view mode" time="0.16288675">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; cancels editing and returns to view mode" time="0.12107475">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; saves edits via API and updates the card" time="0.227282708">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; saves edits via API and updates the card" time="0.152207542">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; persists edited trip to localStorage" time="0.162478792">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; persists edited trip to localStorage" time="0.148227125">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; renders shortlisted trips from localStorage" time="0.08237925">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; renders shortlisted trips from localStorage" time="0.073945458">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows shortlisted trip interests as tags" time="0.047746333">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows shortlisted trip interests as tags" time="0.05392325">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows shortlisted trip description" time="0.036162917">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows shortlisted trip description" time="0.064915417">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; removes a shortlisted trip and updates localStorage" time="0.088665959">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; removes a shortlisted trip and updates localStorage" time="0.049320584">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows &quot;Plan a similar trip&quot; link for shortlisted trips" time="0.052651416">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows &quot;Plan a similar trip&quot; link for shortlisted trips" time="0.040171541">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows shortlisted empty state with Explore link" time="0.044860167">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; shows shortlisted empty state with Explore link" time="0.033200833">
         </testcase>
-        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; renders Back to Dashboard and Explore Trips links" time="0.003516834">
+        <testcase classname="src/pages/__tests__/Trips.test.tsx" name="Trips &gt; renders Back to Dashboard and Explore Trips links" time="0.003171042">
             <system-err>
 An update to Trips inside a test was not wrapped in act(...).
 
