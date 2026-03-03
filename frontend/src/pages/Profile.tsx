@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import logo from '../assets/logo.png'
+import api from '../api/client'
 import './profile.css'
 
 /* ── helpers ── */
@@ -48,6 +49,31 @@ const INTEREST_OPTIONS = [
 ]
 
 /* ════════════════════════════════════════════════ */
+type ProfileState = {
+  username: string
+  email: string
+  location: string
+  dateOfBirth: string
+  bio: string
+  interests: string[]
+  profilePicture: string
+  memberSince: Date
+  tripsCount: number
+  destinationsVisited: number
+}
+
+type EditableField = 'username' | 'email' | 'location' | 'dateOfBirth' | 'bio' | 'interests'
+
+const toDateInputValue = (dateValue: string | null | undefined): string => {
+  if (!dateValue) return ''
+  return dateValue.slice(0, 10)
+}
+
+const toDisplayDate = (dateValue: string | null | undefined, fallback: Date): Date => {
+  if (!dateValue) return fallback
+  return new Date(`${dateValue.slice(0, 10)}T00:00:00`)
+}
+
 const Profile: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
@@ -55,7 +81,7 @@ const Profile: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Profile state - will be fetched from backend
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<ProfileState>({
     username: 'JohnDoe',
     email: 'john.doe@example.com',
     location: '',
@@ -67,6 +93,9 @@ const Profile: React.FC = () => {
     tripsCount: 5,
     destinationsVisited: 12,
   })
+  const [loadingProfile, setLoadingProfile] = useState(true)
+  const [requestError, setRequestError] = useState('')
+  const [savingField, setSavingField] = useState<EditableField | null>(null)
 
   // Edit mode states
   const [isEditingUsername, setIsEditingUsername] = useState(false)
@@ -88,6 +117,62 @@ const Profile: React.FC = () => {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setRequestError('')
+      setLoadingProfile(true)
+
+      try {
+        const response = await api.get('/users/me')
+        const data = response.data
+
+        setProfile((prev) => ({
+          ...prev,
+          username: data.username ?? prev.username,
+          email: data.email ?? prev.email,
+          location: data.location ?? '',
+          dateOfBirth: toDateInputValue(data.dateOfBirth),
+          bio: data.bio ?? '',
+          interests: Array.isArray(data.interests) ? data.interests : [],
+          memberSince: toDisplayDate(data.memberSince, prev.memberSince),
+          tripsCount: typeof data.tripsCount === 'number' ? data.tripsCount : 0,
+          destinationsVisited: typeof data.tripsCount === 'number' ? data.tripsCount : prev.destinationsVisited,
+        }))
+
+        try {
+          const existingUser = localStorage.getItem('routed_user')
+          const parsedUser = existingUser ? JSON.parse(existingUser) : {}
+          localStorage.setItem(
+            'routed_user',
+            JSON.stringify({
+              ...parsedUser,
+              username: data.username,
+              email: data.email,
+              location: data.location,
+              dateOfBirth: data.dateOfBirth,
+            })
+          )
+        } catch {
+          // ignore storage parsing issues
+        }
+      } catch (err) {
+        const status = (err as any)?.response?.status
+        if (status === 401) {
+          localStorage.removeItem('routed_token')
+          localStorage.removeItem('routed_user')
+          navigate('/login')
+          return
+        }
+        const message = (err as any)?.response?.data?.detail || 'Unable to load profile. Please try again.'
+        setRequestError(message)
+      } finally {
+        setLoadingProfile(false)
+      }
+    }
+
+    fetchProfile()
+  }, [navigate])
 
   const handleLogout = () => {
     localStorage.removeItem('routed_token')
@@ -155,36 +240,107 @@ const Profile: React.FC = () => {
     return matches && !profile.interests.includes(option.label)
   })
 
-  const handleSave = (field: string) => {
-    // Here you would make an API call to save the updated field
-    console.log(`Saving ${field}:`, profile[field as keyof typeof profile])
-    
-    // Close the edit mode
+  const handleSave = async (field: EditableField) => {
+    setRequestError('')
+    setSavingField(field)
+
+    const payload: Record<string, unknown> = {}
     switch (field) {
       case 'username':
-        setIsEditingUsername(false)
+        payload.username = profile.username.trim()
         break
       case 'email':
-        setIsEditingEmail(false)
+        payload.email = profile.email.trim()
         break
       case 'location':
-        setIsEditingLocation(false)
+        payload.location = profile.location.trim() || null
         break
       case 'dateOfBirth':
-        setIsEditingDateOfBirth(false)
+        payload.dateOfBirth = profile.dateOfBirth || null
         break
       case 'bio':
-        setIsEditingBio(false)
+        payload.bio = profile.bio.trim() || null
         break
       case 'interests':
-        setIsEditingInterests(false)
+        payload.interests = profile.interests
         break
     }
+
+    try {
+      const response = await api.put('/users/me', payload)
+      const updatedUser = response.data
+
+      setProfile((prev) => ({
+        ...prev,
+        username: updatedUser.username ?? prev.username,
+        email: updatedUser.email ?? prev.email,
+        location: updatedUser.location ?? '',
+        dateOfBirth: toDateInputValue(updatedUser.dateOfBirth),
+        bio: updatedUser.bio ?? '',
+        interests: Array.isArray(updatedUser.interests) ? updatedUser.interests : prev.interests,
+      }))
+
+      try {
+        const existingUser = localStorage.getItem('routed_user')
+        const parsedUser = existingUser ? JSON.parse(existingUser) : {}
+        localStorage.setItem(
+          'routed_user',
+          JSON.stringify({
+            ...parsedUser,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            location: updatedUser.location,
+            dateOfBirth: updatedUser.dateOfBirth,
+          })
+        )
+      } catch {
+        // ignore storage parsing issues
+      }
+
+      switch (field) {
+        case 'username':
+          setIsEditingUsername(false)
+          break
+        case 'email':
+          setIsEditingEmail(false)
+          break
+        case 'location':
+          setIsEditingLocation(false)
+          break
+        case 'dateOfBirth':
+          setIsEditingDateOfBirth(false)
+          break
+        case 'bio':
+          setIsEditingBio(false)
+          break
+        case 'interests':
+          setIsEditingInterests(false)
+          break
+      }
+    } catch (err) {
+      const message = (err as any)?.response?.data?.detail || `Failed to save ${field}. Please try again.`
+      setRequestError(message)
+    } finally {
+      setSavingField(null)
+    }
+  }
+
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-gray-600 text-lg font-medium">Loading profile...</div>
+      </div>
+    )
   }
 
   /* ── render ── */
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+      {requestError && (
+        <div className="max-w-4xl mx-auto px-4 md:px-8 pt-4">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{requestError}</div>
+        </div>
+      )}
       
       {/* ═══════════ HEADER ═══════════ */}
       <header className="w-full sticky top-0 z-30 backdrop-blur-md bg-white/80 border-b border-gray-200/60">
@@ -375,11 +531,6 @@ const Profile: React.FC = () => {
               </div>
               <div className="h-12 w-px bg-white/30"></div>
               <div className="text-white text-center">
-                <div className="text-3xl font-bold">{profile.destinationsVisited}</div>
-                <div className="text-sm text-indigo-100">Destinations</div>
-              </div>
-              <div className="h-12 w-px bg-white/30"></div>
-              <div className="text-white text-center">
                 <div className="text-xs text-indigo-100">Member Since</div>
                 <div className="text-sm font-semibold">{profile.memberSince.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
               </div>
@@ -404,9 +555,10 @@ const Profile: React.FC = () => {
                     />
                     <button
                       onClick={() => handleSave('username')}
+                      disabled={savingField === 'username'}
                       className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                     >
-                      Save
+                      {savingField === 'username' ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={() => setIsEditingUsername(false)}
@@ -450,9 +602,10 @@ const Profile: React.FC = () => {
                     />
                     <button
                       onClick={() => handleSave('email')}
+                      disabled={savingField === 'email'}
                       className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                     >
-                      Save
+                      {savingField === 'email' ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={() => setIsEditingEmail(false)}
@@ -497,9 +650,10 @@ const Profile: React.FC = () => {
                     />
                     <button
                       onClick={() => handleSave('location')}
+                      disabled={savingField === 'location'}
                       className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                     >
-                      Save
+                      {savingField === 'location' ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={() => setIsEditingLocation(false)}
@@ -543,9 +697,10 @@ const Profile: React.FC = () => {
                     />
                     <button
                       onClick={() => handleSave('dateOfBirth')}
+                      disabled={savingField === 'dateOfBirth'}
                       className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                     >
-                      Save
+                      {savingField === 'dateOfBirth' ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={() => setIsEditingDateOfBirth(false)}
@@ -659,9 +814,10 @@ const Profile: React.FC = () => {
                     <div className="flex flex-col gap-2">
                       <button
                         onClick={() => handleSave('interests')}
+                        disabled={savingField === 'interests'}
                         className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                       >
-                        Save
+                        {savingField === 'interests' ? 'Saving...' : 'Save'}
                       </button>
                       <button
                         onClick={() => setIsEditingInterests(false)}
@@ -718,9 +874,10 @@ const Profile: React.FC = () => {
                     <div className="flex flex-col gap-2">
                       <button
                         onClick={() => handleSave('bio')}
+                        disabled={savingField === 'bio'}
                         className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                       >
-                        Save
+                        {savingField === 'bio' ? 'Saving...' : 'Save'}
                       </button>
                       <button
                         onClick={() => setIsEditingBio(false)}
