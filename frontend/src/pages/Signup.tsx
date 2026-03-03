@@ -13,6 +13,7 @@ const Signup: React.FC = () => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
@@ -41,7 +42,7 @@ const Signup: React.FC = () => {
         return
       }
 
-  const payload = { firstName, lastName, email, username, password }
+  const payload = { firstName, lastName, email, username, password, dateOfBirth: dateOfBirth || undefined }
   await api.post('/users/register', payload)
   // on success, navigate to login
   navigate('/login')
@@ -108,6 +109,18 @@ const Signup: React.FC = () => {
                 placeholder="What should we call you? (optional)"
                 value={preferredFirstName}
                 onChange={(e) => setPreferredFirstName(e.target.value)}
+                className="form-input"
+                disabled={loading}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="date-of-birth" className="form-label">Date of Birth</label>
+              <input
+                id="date-of-birth"
+                type="date"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
                 className="form-input"
                 disabled={loading}
               />
