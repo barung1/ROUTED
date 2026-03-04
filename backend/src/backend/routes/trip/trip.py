@@ -36,7 +36,7 @@ def _assert_trip_ownership(trip: Trip, user_id: UUID) -> None:
 def _validate_date_range(start_date, end_date) -> None:
 	if start_date and end_date and end_date < start_date:
 		raise HTTPException(
-			status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+			status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
 			detail="End date must be on or after start date",
 		)
 
