@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 
@@ -282,10 +282,12 @@ describe('Profile', () => {
     const input = screen.getByPlaceholderText(/Search interests or type your own/i)
     await user.type(input, 'Skydiving Adventures')
     await user.click(screen.getByRole('button', { name: /^Add$/i }))
-    // Wait for the chip to appear and DOM to stabilise after onBlur timeout
+    // Wait for chip to appear and onBlur dropdown close timeout (120ms) to settle
     await waitFor(() => {
       expect(screen.getByLabelText('Remove Skydiving Adventures')).toBeInTheDocument()
     })
+    // Flush the 120ms onBlur setTimeout so the dropdown closes before we click Remove
+    await act(async () => { await new Promise((r) => setTimeout(r, 150)) })
     await user.click(screen.getByLabelText('Remove Skydiving Adventures'))
     await waitFor(() => {
       expect(screen.queryByText('Skydiving Adventures')).not.toBeInTheDocument()
@@ -299,12 +301,14 @@ describe('Profile', () => {
     const input = screen.getByPlaceholderText(/Search interests or type your own/i)
     await user.type(input, 'Nightlife')
     await user.click(screen.getByRole('button', { name: /^Add$/i }))
-    // Wait for the chip to appear and DOM to stabilise after onBlur timeout
+    // Wait for the chip to appear after clicking Add
     await waitFor(() => {
-      expect(screen.getByText('Nightlife')).toBeInTheDocument()
+      expect(screen.getByLabelText('Remove Nightlife')).toBeInTheDocument()
     })
-    const saveButtons = screen.getAllByRole('button', { name: /Save/i })
-    await user.click(saveButtons[0])
+    // Flush the 120ms onBlur setTimeout so the dropdown closes before we click Save
+    await act(async () => { await new Promise((r) => setTimeout(r, 150)) })
+    const saveBtn = screen.getAllByRole('button', { name: /Save/i })[0]
+    await user.click(saveBtn)
     await waitFor(() => {
       expect(mockPut).toHaveBeenCalledWith('/users/me', {
         interests: ['Hiking & Trekking', 'Nightlife'],
