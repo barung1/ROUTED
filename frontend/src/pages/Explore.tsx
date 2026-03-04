@@ -8,7 +8,6 @@ interface TripItem {
   id: string
   userId: string | null
   userName: string | null
-  locationId: string
   startDate: string
   endDate: string
   status: string
@@ -150,7 +149,6 @@ const Explore: React.FC = () => {
       state: {
         openTripForm: true,
         prefillTrip: {
-          locationId: trip.locationId,
           fromPlace: trip.fromPlace || '',
           toPlace: trip.toPlace || '',
           travelMode: trip.modeOfTravel ? trip.modeOfTravel.charAt(0).toUpperCase() + trip.modeOfTravel.slice(1) : '',

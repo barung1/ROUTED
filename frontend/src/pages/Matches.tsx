@@ -15,17 +15,11 @@ interface UserBasic {
 
 interface TripBasic {
   id: string
-  locationId: string
   startDate: string
   endDate: string
   fromPlace: string | null
   toPlace: string | null
   budget: number | null
-}
-
-interface LocationBasic {
-  id: string
-  name: string
 }
 
 type MatchStatus =
@@ -47,7 +41,6 @@ interface MatchDetail {
   myTrip: TripBasic
   otherUser: UserBasic
   otherTrip: TripBasic
-  location: LocationBasic
 }
 
 /* ── Helpers ── */
@@ -331,7 +324,7 @@ const Matches: React.FC = () => {
                     {/* Location */}
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-base">📍</span>
-                      <span className="text-sm font-semibold text-gray-900">{match.location.name}</span>
+                      <span className="text-sm font-semibold text-gray-900">{match.myTrip.toPlace || match.otherTrip.toPlace || 'Unknown'}</span>
                     </div>
 
                     {/* Overlap dates */}
@@ -444,7 +437,7 @@ const Matches: React.FC = () => {
                 <div className="space-y-3 mb-5">
                   <div className="flex items-center gap-2 text-sm text-gray-700">
                     <span className="text-base">📍</span>
-                    <span className="font-medium">{selectedMatch.location.name}</span>
+                    <span className="font-medium">{selectedMatch.myTrip.toPlace || selectedMatch.otherTrip.toPlace || 'Unknown'}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-gray-700">
                     <span className="text-base">📅</span>

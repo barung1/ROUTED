@@ -128,7 +128,6 @@ describe('Dashboard', () => {
           myTrip: { id: 't1', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'NYC', toPlace: 'Tokyo', budget: 2000 },
           otherUser: { id: 'u2', username: 'alice', firstName: 'Alice', lastName: null, email: null },
           otherTrip: { id: 't2', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'LA', toPlace: 'Tokyo', budget: 2500 },
-          location: { id: 'l1', name: 'Tokyo' },
         },
       ],
     })
@@ -260,7 +259,6 @@ describe('Dashboard', () => {
           myTrip: { id: 't1', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'NYC', toPlace: 'Tokyo', budget: 2000 },
           otherUser: { id: 'u2', username: 'jane', firstName: 'Jane', lastName: null, email: null },
           otherTrip: { id: 't2', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'LA', toPlace: 'Tokyo', budget: 2500 },
-          location: { id: 'l1', name: 'Tokyo' },
         },
       ],
     })
@@ -295,7 +293,6 @@ describe('Dashboard', () => {
           myTrip: { id: 't1', locationId: 'l1', startDate: '2026-08-01', endDate: '2026-08-10', fromPlace: 'NYC', toPlace: 'Paris', budget: 3000 },
           otherUser: { id: 'u3', username: 'mark', firstName: 'Mark', lastName: null, email: null },
           otherTrip: { id: 't3', locationId: 'l1', startDate: '2026-08-01', endDate: '2026-08-10', fromPlace: 'Boston', toPlace: 'Paris', budget: 2000 },
-          location: { id: 'l1', name: 'Paris' },
         },
       ],
     })
@@ -329,7 +326,6 @@ describe('Dashboard', () => {
           myTrip: { id: 't1', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'NYC', toPlace: 'Tokyo', budget: 2000 },
           otherUser: { id: 'u2', username: 'alice', firstName: 'Alice', lastName: null, email: null },
           otherTrip: { id: 't2', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'LA', toPlace: 'Tokyo', budget: 2500 },
-          location: { id: 'l1', name: 'Tokyo' },
         },
       ],
     })
@@ -369,7 +365,6 @@ describe('Dashboard', () => {
           myTrip: { id: 't1', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'NYC', toPlace: 'Tokyo', budget: 2000 },
           otherUser: { id: 'u2', username: 'alice', firstName: 'Alice', lastName: null, email: null },
           otherTrip: { id: 't2', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'LA', toPlace: 'Tokyo', budget: 2500 },
-          location: { id: 'l1', name: 'Tokyo' },
         },
       ],
     })

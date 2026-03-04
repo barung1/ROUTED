@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 
@@ -47,7 +47,7 @@ vi.mock('../../api/client', () => ({
 
 import Profile from '../Profile'
 
-/* Default profile data returned by GET /users/me */
+/* ── Default profile data returned by GET /users/me ── */
 const MOCK_PROFILE = {
   username: 'JohnDoe',
   email: 'john.doe@example.com',
@@ -65,6 +65,7 @@ const renderProfile = async () => {
       <Profile />
     </BrowserRouter>
   )
+  // Wait for the loading state to finish (component fetches /users/me)
   await waitFor(() => {
     expect(screen.queryByText('Loading profile...')).not.toBeInTheDocument()
   })
@@ -74,11 +75,15 @@ describe('Profile', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    // Default: GET /users/me returns profile data
     mockGet.mockResolvedValue({ data: { ...MOCK_PROFILE } })
+    // Default: PUT /users/me echoes back the payload merged with existing profile
     mockPut.mockImplementation((_url: string, payload: any) =>
       Promise.resolve({ data: { ...MOCK_PROFILE, ...payload } })
     )
   })
+
+  /* ─── Loading & fetch ─── */
 
   it('shows loading state then renders profile after fetch', async () => {
     let resolveFetch!: (v: any) => void
@@ -96,6 +101,8 @@ describe('Profile', () => {
     await renderProfile()
     expect(mockGet).toHaveBeenCalledWith('/users/me')
   })
+
+  /* ─── Core rendering ─── */
 
   it('renders the profile page with username from API', async () => {
     await renderProfile()
@@ -139,6 +146,8 @@ describe('Profile', () => {
     expect(screen.getByText('Hiking & Trekking')).toBeInTheDocument()
   })
 
+  /* ─── Empty profile fields show placeholders ─── */
+
   it('shows placeholder text for empty fields', async () => {
     mockGet.mockResolvedValue({
       data: { username: 'JohnDoe', email: 'john@example.com', tripsCount: 0 },
@@ -148,6 +157,8 @@ describe('Profile', () => {
     expect(screen.getByText(/What makes your heart race/i)).toBeInTheDocument()
     expect(screen.getByText(/Share your travel story/i)).toBeInTheDocument()
   })
+
+  /* ─── Username editing ─── */
 
   it('enters edit mode for username and saves via API', async () => {
     await renderProfile()
@@ -175,6 +186,8 @@ describe('Profile', () => {
     })
   })
 
+  /* ─── Email editing ─── */
+
   it('enters edit mode for email and shows input with current value', async () => {
     await renderProfile()
     const user = userEvent.setup()
@@ -194,6 +207,8 @@ describe('Profile', () => {
     })
   })
 
+  /* ─── Location editing ─── */
+
   it('enters edit mode for location and saves via API', async () => {
     await renderProfile()
     const user = userEvent.setup()
@@ -207,6 +222,8 @@ describe('Profile', () => {
     })
   })
 
+  /* ─── Date of Birth editing ─── */
+
   it('enters edit mode for date of birth', async () => {
     await renderProfile()
     const user = userEvent.setup()
@@ -214,6 +231,8 @@ describe('Profile', () => {
     const dateInputs = document.querySelectorAll('input[type="date"]')
     expect(dateInputs.length).toBeGreaterThan(0)
   })
+
+  /* ─── Bio editing ─── */
 
   it('enters edit mode for bio and saves via API', async () => {
     await renderProfile()
@@ -237,6 +256,8 @@ describe('Profile', () => {
       expect(screen.getByText('Love to travel!')).toBeInTheDocument()
     })
   })
+
+  /* ─── Interests editing ─── */
 
   it('enters interest editing mode', async () => {
     mockGet.mockResolvedValue({
@@ -282,12 +303,10 @@ describe('Profile', () => {
     const input = screen.getByPlaceholderText(/Search interests or type your own/i)
     await user.type(input, 'Skydiving Adventures')
     await user.click(screen.getByRole('button', { name: /^Add$/i }))
-    // Wait for chip to appear and onBlur dropdown close timeout (120ms) to settle
+    // Wait for the chip to appear and DOM to stabilise after onBlur timeout
     await waitFor(() => {
       expect(screen.getByLabelText('Remove Skydiving Adventures')).toBeInTheDocument()
     })
-    // Flush the 120ms onBlur setTimeout so the dropdown closes before we click Remove
-    await act(async () => { await new Promise((r) => setTimeout(r, 150)) })
     await user.click(screen.getByLabelText('Remove Skydiving Adventures'))
     await waitFor(() => {
       expect(screen.queryByText('Skydiving Adventures')).not.toBeInTheDocument()
@@ -301,20 +320,20 @@ describe('Profile', () => {
     const input = screen.getByPlaceholderText(/Search interests or type your own/i)
     await user.type(input, 'Nightlife')
     await user.click(screen.getByRole('button', { name: /^Add$/i }))
-    // Wait for the chip to appear after clicking Add
+    // Wait for the chip to appear and DOM to stabilise after onBlur timeout
     await waitFor(() => {
-      expect(screen.getByLabelText('Remove Nightlife')).toBeInTheDocument()
+      expect(screen.getByText('Nightlife')).toBeInTheDocument()
     })
-    // Flush the 120ms onBlur setTimeout so the dropdown closes before we click Save
-    await act(async () => { await new Promise((r) => setTimeout(r, 150)) })
-    const saveBtn = screen.getAllByRole('button', { name: /Save/i })[0]
-    await user.click(saveBtn)
+    const saveButtons = screen.getAllByRole('button', { name: /Save/i })
+    await user.click(saveButtons[0])
     await waitFor(() => {
       expect(mockPut).toHaveBeenCalledWith('/users/me', {
         interests: ['Hiking & Trekking', 'Nightlife'],
       })
     })
   })
+
+  /* ─── Profile picture menu ─── */
 
   it('opens profile picture menu on click', async () => {
     await renderProfile()
@@ -323,6 +342,8 @@ describe('Profile', () => {
     expect(screen.getByText('Choose from Gallery')).toBeInTheDocument()
     expect(screen.getByText('Take a Photo')).toBeInTheDocument()
   })
+
+  /* ─── Logout ─── */
 
   it('logs out, clears localStorage, and navigates to home', async () => {
     localStorage.setItem('routed_token', 'test-token')
@@ -338,6 +359,8 @@ describe('Profile', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/')
   })
 
+  /* ─── Settings dropdown navigation ─── */
+
   it('settings dropdown has Dashboard, My Trips, and Explore links', async () => {
     await renderProfile()
     const user = userEvent.setup()
@@ -351,6 +374,8 @@ describe('Profile', () => {
     await renderProfile()
     expect(screen.getByText('Back to Dashboard')).toBeInTheDocument()
   })
+
+  /* ─── API error handling ─── */
 
   it('redirects to login on 401 error', async () => {
     mockGet.mockRejectedValue({ response: { status: 401 } })

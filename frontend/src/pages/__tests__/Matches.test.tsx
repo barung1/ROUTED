@@ -67,7 +67,6 @@ describe('Matches', () => {
           myTrip: { id: 't1', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'NYC', toPlace: 'Tokyo', budget: 2000 },
           otherUser: { id: 'u2', username: 'jane_doe', firstName: 'Jane', lastName: 'Doe', email: 'jane@example.com' },
           otherTrip: { id: 't2', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'LA', toPlace: 'Tokyo', budget: 2500 },
-          location: { id: 'l1', name: 'Tokyo' },
         },
       ],
     })
@@ -94,7 +93,6 @@ describe('Matches', () => {
           myTrip: { id: 't1', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'NYC', toPlace: 'Tokyo', budget: 2000 },
           otherUser: { id: 'u2', username: 'pending_user', firstName: null, lastName: null, email: null },
           otherTrip: { id: 't2', locationId: 'l1', startDate: '2026-07-01', endDate: '2026-07-10', fromPlace: 'LA', toPlace: 'Tokyo', budget: 2500 },
-          location: { id: 'l1', name: 'Tokyo' },
         },
         {
           id: 'm2',
@@ -108,7 +106,6 @@ describe('Matches', () => {
           myTrip: { id: 't3', locationId: 'l2', startDate: '2026-08-01', endDate: '2026-08-10', fromPlace: 'NYC', toPlace: 'Paris', budget: 3000 },
           otherUser: { id: 'u3', username: 'partial_user', firstName: null, lastName: null, email: null },
           otherTrip: { id: 't4', locationId: 'l2', startDate: '2026-08-01', endDate: '2026-08-10', fromPlace: 'London', toPlace: 'Paris', budget: 2000 },
-          location: { id: 'l2', name: 'Paris' },
         },
       ],
     })

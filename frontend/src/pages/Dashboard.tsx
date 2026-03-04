@@ -16,17 +16,11 @@ interface UserBasic {
 
 interface TripBasic {
   id: string
-  locationId: string
   startDate: string
   endDate: string
   fromPlace: string | null
   toPlace: string | null
   budget: number | null
-}
-
-interface LocationBasic {
-  id: string
-  name: string
 }
 
 type MatchStatus =
@@ -48,7 +42,6 @@ interface MatchDetail {
   myTrip: TripBasic
   otherUser: UserBasic
   otherTrip: TripBasic
-  location: LocationBasic
 }
 
 /** Message stored in localStorage for backend match notifications */
@@ -172,7 +165,7 @@ const Dashboard: React.FC = () => {
               type: 'both_accepted',
               matchId: m.id,
               otherUsername: m.otherUser.username,
-              locationName: m.location.name,
+              locationName: m.myTrip.toPlace || m.otherTrip.toPlace || 'Unknown',
               matchStart: m.matchStart,
               matchEnd: m.matchEnd,
               myTripLabel: tripLabel(m.myTrip),
@@ -186,7 +179,7 @@ const Dashboard: React.FC = () => {
               type: 'rejected',
               matchId: m.id,
               otherUsername: m.otherUser.username,
-              locationName: m.location.name,
+              locationName: m.myTrip.toPlace || m.otherTrip.toPlace || 'Unknown',
               matchStart: m.matchStart,
               matchEnd: m.matchEnd,
               myTripLabel: tripLabel(m.myTrip),
@@ -237,7 +230,7 @@ const Dashboard: React.FC = () => {
         type: isBothAccepted ? 'both_accepted' : 'rejected',
         matchId: match.id,
         otherUsername: match.otherUser.username,
-        locationName: match.location.name,
+        locationName: match.myTrip.toPlace || match.otherTrip.toPlace || 'Unknown',
         matchStart: match.matchStart,
         matchEnd: match.matchEnd,
         myTripLabel: tripLabel(match.myTrip),
@@ -281,7 +274,7 @@ const Dashboard: React.FC = () => {
         type: 'rejected',
         matchId: match.id,
         otherUsername: match.otherUser.username,
-        locationName: match.location.name,
+        locationName: match.myTrip.toPlace || match.otherTrip.toPlace || 'Unknown',
         matchStart: match.matchStart,
         matchEnd: match.matchEnd,
         myTripLabel: tripLabel(match.myTrip),
@@ -799,7 +792,7 @@ const Dashboard: React.FC = () => {
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-gray-900 text-sm truncate">@{match.otherUser.username}</p>
                             <p className="text-[11px] text-gray-500 truncate">
-                              📍 {match.location.name} · {fmtDate(match.matchStart)} – {fmtDate(match.matchEnd)}
+                              📍 {match.myTrip.toPlace || match.otherTrip.toPlace || 'Unknown'} · {fmtDate(match.matchStart)} – {fmtDate(match.matchEnd)}
                             </p>
                             <p className="text-[10px] text-amber-600 font-semibold mt-0.5">⭐ {match.score.toFixed(0)}% match</p>
                           </div>
