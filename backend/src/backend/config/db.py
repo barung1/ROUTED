@@ -185,6 +185,9 @@ def _ensure_user_profile_columns() -> None:
 		if "bio" not in user_columns:
 			connection.execute(text(f"ALTER TABLE {db_schema}.users ADD COLUMN IF NOT EXISTS bio VARCHAR"))
 			missing_columns.append("bio")
+		if "profile_picture" not in user_columns:
+			connection.execute(text(f"ALTER TABLE {db_schema}.users ADD COLUMN IF NOT EXISTS profile_picture TEXT"))
+			missing_columns.append("profile_picture")
 
 		connection.commit()
 

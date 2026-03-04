@@ -80,6 +80,7 @@ def test_register_user_success(client):
 		"password": "Secret1!",
 		"firstName": "Test",
 		"lastName": "User",
+		"profilePicture": "https://cdn.example.com/avatar.png",
 	}
 	response = client.post("/users/register", json=payload)
 	app.dependency_overrides.clear()
@@ -90,6 +91,7 @@ def test_register_user_success(client):
 	assert body["email"] == payload["email"]
 	assert body["firstName"] == payload["firstName"]
 	assert body["lastName"] == payload["lastName"]
+	assert body["profilePicture"] == payload["profilePicture"]
 	assert UUID(body["id"])
 	assert len(fake_session.added) == 1
 	assert fake_session.committed is True
@@ -504,6 +506,7 @@ def test_update_user_multiple_fields_success(client):
 		"firstName": "John",
 		"lastName": "Doe",
 		"password": "NewSecret2@",
+		"profilePicture": "https://cdn.example.com/new-avatar.png",
 	}
 	response = client.put("/users/me", json=payload, headers={"Authorization": f"Bearer {token}"})
 	app.dependency_overrides.clear()
@@ -513,6 +516,7 @@ def test_update_user_multiple_fields_success(client):
 	assert body["email"] == "newemail@example.com"
 	assert body["firstName"] == "John"
 	assert body["lastName"] == "Doe"
+	assert body["profilePicture"] == "https://cdn.example.com/new-avatar.png"
 	assert body["username"] == "tester"
 	assert fake_session.committed is True
 
@@ -610,3 +614,64 @@ def test_update_user_unauthorized_no_token(client):
 	app.dependency_overrides.clear()
 
 	assert response.status_code == 401
+
+
+def test_update_profile_picture_upload_success(client):
+	user_id = uuid4()
+	existing_user = User(
+		id=user_id,
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+
+	response = client.put(
+		"/users/me/profile-picture",
+		files={"profile_picture": ("avatar.jpg", b"fake-jpeg-bytes", "image/jpeg")},
+		headers={"Authorization": f"Bearer {token}"},
+	)
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 200
+	body = response.json()
+	assert body["profilePicture"].startswith("data:image/jpeg;base64,")
+	assert fake_session.committed is True
+
+
+def test_update_profile_picture_upload_invalid_type(client):
+	user_id = uuid4()
+	existing_user = User(
+		id=user_id,
+		username="tester",
+		email="tester@example.com",
+		first_name="Test",
+		last_name="User",
+		hashed_password=_hash_password("Secret1!"),
+	)
+	fake_session = FakeSession(existing_user=existing_user)
+	app.dependency_overrides[get_db_session] = _override_db_session(fake_session)
+
+	token = create_access_token(
+		data={"sub": str(user_id), "username": "tester"},
+		expires_delta=timedelta(hours=1)
+	)
+
+	response = client.put(
+		"/users/me/profile-picture",
+		files={"profile_picture": ("avatar.png", b"not-jpeg", "image/png")},
+		headers={"Authorization": f"Bearer {token}"},
+	)
+	app.dependency_overrides.clear()
+
+	assert response.status_code == 400
+	assert response.json()["detail"] == "Profile picture must be a JPEG/JPG image"
+	assert fake_session.committed is False
