@@ -1,16 +1,37 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../api/client'
 
 /* ── types ── */
-interface LocationItem {
+interface TripItem {
   id: string
-  name: string
-  description: string
-  latitude: number
-  longitude: number
-  tags: string[]
+  userId: string | null
+  userName: string | null
+  startDate: string
+  endDate: string
+  status: string
+  fromPlace: string | null
+  toPlace: string | null
+  modeOfTravel: string | null
+  budget: number | null
+  interests: string[]
+  description: string | null
+}
+
+/* ── Interest record stored in localStorage ── */
+export interface InterestRecord {
+  id: string
+  fromUserId: string
+  fromUsername: string
+  toUserId: string
+  toUsername: string
+  tripId: string
+  tripLabel: string
+  tripStartDate: string
+  tripEndDate: string
+  timestamp: string
+  status: 'pending' | 'accepted' | 'declined'
 }
 
 /* ── helpers ── */
@@ -20,19 +41,41 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
 })
 
+const tripEmojis = ['✈️', '🚂', '🚗', '🛳️', '🏖️', '🏔️', '🌆', '🗼', '⛩️', '🏝️']
+const modeEmoji: Record<string, string> = {
+  flight: '✈️', train: '🚂', bus: '🚌', car: '🚗',
+  ship: '🛳️', bicycle: '🚲', walking: '🚶', other: '🧳',
+}
+
+
+
+/* Fallback username when a trip has no username */
+const FALLBACK_USERNAME = 'traveler'
+
+/** Parse a date-only string (YYYY-MM-DD) as local time, not UTC */
+const parseLocalDate = (d: string) => new Date(d + 'T00:00:00')
+
 const LS_SHORTLIST_KEY = 'routed_shortlisted'
-const locationEmojis = ['🏖️', '🏔️', '🌆', '🗼', '⛩️', '🏝️', '🌋', '🏰', '🎡', '🌉']
+const LS_INTERESTS_KEY = 'routed_interests'
 
 /* ════════════════════════════════════════════════ */
 const Explore: React.FC = () => {
-  const [locations, setLocations] = useState<LocationItem[]>([])
-  const [shortlisted, setShortlisted] = useState<LocationItem[]>([])
+  const [trips, setTrips] = useState<TripItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [showAuthModal, setShowAuthModal] = useState(false)
+  const [selectedTrip, setSelectedTrip] = useState<TripItem | null>(null)
+  const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set())
+  const [interestedTripIds, setInterestedTripIds] = useState<Set<string>>(new Set())
+  const [interestSending, setInterestSending] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const isLoggedIn = () => !!localStorage.getItem('routed_token')
+
+  const getCurrentUser = () => {
+    try { return JSON.parse(localStorage.getItem('routed_user') || 'null') } catch { return null }
+  }
 
   /* ── Auth-gated action helper ── */
   const requireAuth = (action: () => void) => {
@@ -43,23 +86,32 @@ const Explore: React.FC = () => {
     }
   }
 
-  /* ── Load locations from API ── */
+  /* ── Helper: get display username for a trip ── */
+  const getDisplayUsername = (trip: TripItem): string => {
+    if (trip.userName) return trip.userName
+    return FALLBACK_USERNAME
+  }
+
+  /* ── Helper: trip label ── */
+  const getTripLabel = (trip: TripItem): string => {
+    if (trip.fromPlace && trip.toPlace) return `${trip.fromPlace} → ${trip.toPlace}`
+    return trip.toPlace || trip.fromPlace || 'Trip'
+  }
+
+  /* ── Load trips from API ── */
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {
-        const res = await api.get('/locations/')
-        setLocations(res.data as LocationItem[])
+        const res = await api.get('/trips/')
+        const data = res.data as TripItem[]
+        // Sort newest trips first (nearest start date first)
+        data.sort((a, b) =>
+          new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+        )
+        setTrips(data)
       } catch {
-        // fallback sample data when backend unavailable
-        setLocations([
-          { id: 'sample-1', name: 'Paris, France', description: 'The city of lights — art, culture, and gourmet food.', latitude: 48.8566, longitude: 2.3522, tags: [] },
-          { id: 'sample-2', name: 'Tokyo, Japan', description: 'A vibrant mix of tradition and futuristic innovation.', latitude: 35.6762, longitude: 139.6503, tags: [] },
-          { id: 'sample-3', name: 'Cape Town, South Africa', description: 'Stunning landscapes and incredible wildlife.', latitude: -33.9249, longitude: 18.4241, tags: [] },
-          { id: 'sample-4', name: 'Bali, Indonesia', description: 'Tropical paradise with temples and rice terraces.', latitude: -8.3405, longitude: 115.092, tags: [] },
-          { id: 'sample-5', name: 'New York, USA', description: 'The city that never sleeps — food, culture, skyline.', latitude: 40.7128, longitude: -74.006, tags: [] },
-          { id: 'sample-6', name: 'Barcelona, Spain', description: 'Gaudí architecture, beaches, and tapas.', latitude: 41.3874, longitude: 2.1686, tags: [] },
-        ])
+        setTrips([])
       } finally {
         setLoading(false)
       }
@@ -67,58 +119,145 @@ const Explore: React.FC = () => {
     load()
   }, [])
 
-  /* ── Load shortlisted from localStorage (only when logged in) ── */
+  /* ── Load shortlisted & interests from localStorage ── */
   useEffect(() => {
-    if (isLoggedIn()) {
-      const saved: LocationItem[] = JSON.parse(localStorage.getItem(LS_SHORTLIST_KEY) || '[]')
-      setShortlisted(saved)
-    } else {
-      setShortlisted([])
+    const savedShortlist: TripItem[] = JSON.parse(localStorage.getItem(LS_SHORTLIST_KEY) || '[]')
+    setShortlistedIds(new Set(savedShortlist.map((t) => t.id)))
+    // Load interests this user has sent
+    const currentUser = getCurrentUser()
+    if (currentUser) {
+      const allInterests: InterestRecord[] = JSON.parse(localStorage.getItem(LS_INTERESTS_KEY) || '[]')
+      const myPending = allInterests.filter((r) => r.fromUserId === currentUser.id && r.status === 'pending')
+      setInterestedTripIds(new Set(myPending.map((r) => r.tripId)))
     }
   }, [])
 
-  /* ── Shortlist helpers ── */
-  const isShortlisted = useCallback(
-    (id: string) => shortlisted.some((s) => s.id === id),
-    [shortlisted],
-  )
+  /* ── Filter trips by search ── */
+  let filtered = searchQuery.trim()
+    ? trips.filter(
+        (t) =>
+          (t.fromPlace?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+          (t.toPlace?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+          (t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+          t.interests.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())),
+      )
+    : trips
 
-  const toggleShortlist = (loc: LocationItem) => {
-    setShortlisted((prev) => {
-      const exists = prev.some((s) => s.id === loc.id)
-      const next = exists ? prev.filter((s) => s.id !== loc.id) : [...prev, loc]
-      localStorage.setItem(LS_SHORTLIST_KEY, JSON.stringify(next))
-      return next
+  /* ── Plan similar trip → pre-fill Dashboard form ── */
+  const planSimilarTrip = (trip: TripItem) => {
+    navigate('/dashboard', {
+      state: {
+        openTripForm: true,
+        prefillTrip: {
+          fromPlace: trip.fromPlace || '',
+          toPlace: trip.toPlace || '',
+          travelMode: trip.modeOfTravel ? trip.modeOfTravel.charAt(0).toUpperCase() + trip.modeOfTravel.slice(1) : '',
+          budget: trip.budget != null ? String(trip.budget) : '',
+          interests: trip.interests.join(', '),
+          description: trip.description || '',
+        },
+      },
     })
   }
 
-  /* ── Filter by search ── */
-  const filtered = searchQuery.trim()
-    ? locations.filter(
-        (l) =>
-          l.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          l.description?.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : locations
+  /* ── Toggle shortlist (trip-based) ── */
+  const toggleShortlist = (trip: TripItem) => {
+    const saved: TripItem[] = JSON.parse(localStorage.getItem(LS_SHORTLIST_KEY) || '[]')
+    const exists = saved.some((t) => t.id === trip.id)
+    let updated: TripItem[]
+    if (exists) {
+      updated = saved.filter((t) => t.id !== trip.id)
+    } else {
+      updated = [...saved, trip]
+    }
+    localStorage.setItem(LS_SHORTLIST_KEY, JSON.stringify(updated))
+    setShortlistedIds(new Set(updated.map((t) => t.id)))
+  }
+
+  /* ── Show interest on a trip ── */
+  const handleShowInterest = (trip: TripItem) => {
+    const currentUser = getCurrentUser()
+    if (!currentUser) {
+      setShowAuthModal(true)
+      return
+    }
+    if (!trip.userId) {
+      setToast('This trip has no owner — cannot express interest.')
+      setTimeout(() => setToast(null), 3000)
+      return
+    }
+
+    setInterestSending(trip.id)
+
+    const allInterests: InterestRecord[] = JSON.parse(localStorage.getItem(LS_INTERESTS_KEY) || '[]')
+    const existing = allInterests.find(
+      (r) => r.fromUserId === currentUser.id && r.tripId === trip.id && r.status === 'pending'
+    )
+
+    if (existing) {
+      // Toggle off — remove interest
+      const updated = allInterests.filter((r) => r.id !== existing.id)
+      localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(updated))
+      setInterestedTripIds((prev) => { const s = new Set(prev); s.delete(trip.id); return s })
+      setToast('Interest removed.')
+    } else {
+      // Add new interest
+      const record: InterestRecord = {
+        id: crypto.randomUUID(),
+        fromUserId: currentUser.id,
+        fromUsername: currentUser.username || 'unknown',
+        toUserId: trip.userId,
+        toUsername: trip.userName || getDisplayUsername(trip),
+        tripId: trip.id,
+        tripLabel: getTripLabel(trip),
+        tripStartDate: trip.startDate,
+        tripEndDate: trip.endDate,
+        timestamp: new Date().toISOString(),
+        status: 'pending',
+      }
+      allInterests.push(record)
+      localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(allInterests))
+      setInterestedTripIds((prev) => new Set(prev).add(trip.id))
+      setToast(`❤️ Interest sent to @${record.toUsername}!`)
+    }
+
+    setTimeout(() => { setInterestSending(null); setToast(null) }, 3000)
+  }
 
   /* ═══════════════ RENDER ═══════════════ */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 relative">
+
+      {/* ── Toast notification ── */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold bg-indigo-600 text-white"
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Hero header ── */}
       <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 pt-8 pb-20 px-4 md:px-8 relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-12 -left-12 w-44 h-44 bg-white/10 rounded-full blur-2xl" />
 
-        <div className="max-w-6xl mx-auto relative">
+        <div className="max-w-6xl mx-auto relative text-center">
           <motion.div {...fadeUp(0)}>
-            <Link to="/dashboard" className="inline-flex items-center gap-2 text-indigo-200 hover:text-white text-sm font-medium mb-4 transition">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-              Back to Dashboard
-            </Link>
+            {isLoggedIn() && (
+              <Link to="/dashboard" className="inline-flex items-center gap-2 text-indigo-200 hover:text-white text-sm font-medium mb-4 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                Back to Dashboard
+              </Link>
+            )}
             <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">🌍 Explore Trips</h1>
-            <p className="mt-2 text-indigo-200 text-sm md:text-base max-w-lg">
-              Discover amazing destinations around the world. Shortlist the ones you love and plan your next adventure.
+            <p className="mt-2 text-indigo-200 text-sm md:text-base max-w-lg mx-auto">
+              Discover trips from travelers around the world. Get inspired and plan your next adventure.
             </p>
           </motion.div>
         </div>
@@ -131,8 +270,9 @@ const Explore: React.FC = () => {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search destinations by name or description…"
+            onChange={(e) => { if (isLoggedIn()) setSearchQuery(e.target.value); else setShowAuthModal(true) }}
+            onFocus={() => { if (!isLoggedIn()) setShowAuthModal(true) }}
+            placeholder="Search trips by place, description, or interests…"
             className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 focus:outline-none"
           />
           {searchQuery && (
@@ -141,7 +281,7 @@ const Explore: React.FC = () => {
             </button>
           )}
           <div className="text-xs text-gray-400 shrink-0">
-            {filtered.length} destination{filtered.length !== 1 ? 's' : ''}
+            {filtered.length} trip{filtered.length !== 1 ? 's' : ''}
           </div>
         </motion.div>
       </div>
@@ -149,93 +289,161 @@ const Explore: React.FC = () => {
       {/* ── Stats bar ── */}
       <div className="max-w-6xl mx-auto px-4 md:px-8 mt-4">
         <motion.div {...fadeUp(0.15)} className="flex flex-wrap items-center gap-4">
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg">
-            📍 {locations.length} total destinations
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg">
-            ⭐ {shortlisted.length} shortlisted
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 bg-violet-50 px-3 py-1.5 rounded-lg">
+            ✈️ {trips.length} trip{trips.length !== 1 ? 's' : ''} to explore
           </span>
           <span className="flex-1" />
-          <Link
-            to="/trips"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition"
-          >
-            View My Trips →
-          </Link>
+          {isLoggedIn() && (
+            <Link
+              to="/trips"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition"
+            >
+              View My Trips →
+            </Link>
+          )}
         </motion.div>
       </div>
 
       {/* ── Content ── */}
-      <main className="max-w-6xl mx-auto px-4 md:px-8 py-6">
+      <main className="max-w-6xl mx-auto px-4 md:px-8 py-6 pb-28">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <motion.div {...fadeUp(0.1)} className="text-center py-20">
-            <span className="text-6xl mb-4 block">🔍</span>
+            <span className="text-6xl mb-4 block">✈️</span>
             <h3 className="text-xl font-bold text-gray-900 mb-2">
-              {searchQuery ? 'No matching destinations' : 'No destinations found'}
+              {searchQuery ? 'No matching trips' : 'No trips to explore yet'}
             </h3>
             <p className="text-gray-500 max-w-md mx-auto">
               {searchQuery
                 ? `Nothing matches "${searchQuery}". Try a different search term.`
-                : 'Destinations will appear here once they are added to the system.'}
+                : 'Trips from other travelers will appear here. Check back soon!'}
             </p>
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {filtered.map((loc, i) => {
-              const saved = isShortlisted(loc.id)
+            {filtered.map((trip, i) => {
+              const modeLabel = trip.modeOfTravel
+                ? trip.modeOfTravel.charAt(0).toUpperCase() + trip.modeOfTravel.slice(1)
+                : null
+              const mIcon = trip.modeOfTravel ? (modeEmoji[trip.modeOfTravel] || '🧳') : null
+              const displayName = getDisplayUsername(trip)
+              const currentUser = getCurrentUser()
+              const isOwnTrip = currentUser && trip.userId === currentUser.id
+              const isShortlisted = shortlistedIds.has(trip.id)
+              const isInterested = interestedTripIds.has(trip.id)
+              const isSendingInterest = interestSending === trip.id
               return (
                 <motion.div
-                  key={loc.id}
+                  key={trip.id}
                   {...fadeUp(0.04 * Math.min(i, 8))}
                   whileHover={{ y: -4 }}
-                  className={`bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border overflow-hidden transition-all group ${
-                    saved ? 'border-amber-300 ring-2 ring-amber-200' : 'border-gray-200/60 hover:border-indigo-300'
-                  }`}
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-gray-200/60 hover:border-indigo-300 overflow-hidden transition-all group"
                 >
-                  {/* Gradient strip */}
-                  <div className={`h-2 ${saved ? 'bg-gradient-to-r from-amber-400 to-orange-400' : 'bg-gradient-to-r from-indigo-400 to-violet-400'}`} />
+                  <div className="h-2 bg-gradient-to-r from-violet-400 to-fuchsia-400" />
 
                   <div className="p-5">
-                    <div className="flex items-start gap-3 mb-3">
-                      <span className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl shrink-0 shadow-sm group-hover:shadow-md transition">
-                        {locationEmojis[i % locationEmojis.length]}
+                    {/* Creator username badge */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-[10px] text-white font-bold shadow-sm">
+                        {displayName.charAt(0).toUpperCase()}
                       </span>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-bold text-gray-900 truncate text-base">{loc.name}</h4>
-                        <p className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-                          <span>📍</span> {loc.latitude.toFixed(2)}°, {loc.longitude.toFixed(2)}°
-                        </p>
-                      </div>
-                      {saved && <span className="text-amber-400 text-lg shrink-0 animate-pulse">⭐</span>}
+                      <span className="text-xs font-semibold text-gray-600">@{displayName}</span>
                     </div>
 
-                    {loc.description && (
-                      <p className="text-sm text-gray-600 leading-relaxed mb-4 line-clamp-3">{loc.description}</p>
+                    {/* Header row */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <span className="w-12 h-12 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center text-2xl shrink-0 shadow-sm group-hover:shadow-md transition">
+                        {tripEmojis[i % tripEmojis.length]}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-gray-900 text-base truncate">
+                          {trip.fromPlace && trip.toPlace
+                            ? `${trip.fromPlace} → ${trip.toPlace}`
+                            : trip.toPlace || trip.fromPlace || 'Trip'}
+                        </h4>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          📅 {parseLocalDate(trip.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {parseLocalDate(trip.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Detail chips */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {mIcon && modeLabel && (
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
+                          {mIcon} {modeLabel}
+                        </span>
+                      )}
+                      {trip.budget != null && (
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-lg">
+                          💰 ${trip.budget.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+
+                    {trip.description && (
+                      <p className="text-sm text-gray-600 leading-relaxed mb-3 line-clamp-2">{trip.description}</p>
                     )}
 
-                    <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-                      <motion.button
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => requireAuth(() => toggleShortlist(loc))}
-                        className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl transition ${
-                          saved
-                            ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                            : 'bg-gray-100 text-gray-600 hover:bg-indigo-100 hover:text-indigo-700'
-                        }`}
-                      >
-                        {saved ? '⭐ Shortlisted' : '☆ Shortlist'}
-                      </motion.button>
-                      <span className="flex-1" />
+                    {trip.interests.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        {trip.interests.slice(0, 4).map((tag) => (
+                          <span key={tag} className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{tag}</span>
+                        ))}
+                        {trip.interests.length > 4 && (
+                          <span className="text-[10px] text-gray-400">+{trip.interests.length - 4} more</span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3 pt-3 border-t border-gray-100">
+                      {/* View More */}
                       <button
-                        onClick={() => requireAuth(() => navigate('/dashboard', { state: { openTripForm: true } }))}
-                        className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition"
+                        onClick={() => requireAuth(() => setSelectedTrip(trip))}
+                        className="text-xs text-gray-500 hover:text-indigo-600 font-semibold transition"
                       >
-                        Plan a trip →
+                        View More
                       </button>
+                      {/* Plan a similar trip — only when logged in */}
+                      {isLoggedIn() && (
+                        <>
+                          <span className="text-gray-200">|</span>
+                          <button
+                            onClick={() => planSimilarTrip(trip)}
+                            className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition"
+                          >
+                            Plan a similar trip →
+                          </button>
+                        </>
+                      )}
+                      <span className="flex-1" />
+                      {/* Shortlist button — only when signed in */}
+                      {isLoggedIn() && (
+                        <button
+                          onClick={() => toggleShortlist(trip)}
+                          className={`text-lg transition-transform hover:scale-125 ${isShortlisted ? 'drop-shadow-sm' : 'opacity-40 hover:opacity-80'}`}
+                          title={isShortlisted ? 'Remove from shortlist' : 'Add to shortlist'}
+                        >
+                          {isShortlisted ? '⭐' : '☆'}
+                        </button>
+                      )}
+                      {/* I'm Interested — only when signed in & NOT own trip */}
+                      {isLoggedIn() && !isOwnTrip && (
+                        <button
+                          disabled={isSendingInterest}
+                          onClick={() => handleShowInterest(trip)}
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-full transition-all ${
+                            isInterested
+                              ? 'bg-pink-100 text-pink-600 border border-pink-200'
+                              : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-pink-50 hover:text-pink-600 hover:border-pink-200'
+                          } ${isSendingInterest ? 'opacity-50' : ''}`}
+                        >
+                          {isInterested ? '❤️ Interested' : '🤍 I\'m Interested'}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </motion.div>
@@ -245,7 +453,177 @@ const Explore: React.FC = () => {
         )}
       </main>
 
-      {/* ── Auth Gate Modal ── */}
+      {/* ═══════ TRIP DETAIL MODAL ═══════ */}
+      <AnimatePresence>
+        {selectedTrip && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          >
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => setSelectedTrip(null)}
+            />
+
+            {/* Modal card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 30 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full z-10 overflow-hidden"
+            >
+              {/* Gradient header */}
+              <div className="h-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500" />
+
+              {/* Close button */}
+              <button
+                onClick={() => setSelectedTrip(null)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition z-10"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+              </button>
+
+              <div className="p-7">
+                {/* Trip title */}
+                <div className="flex items-center gap-3 mb-5">
+                  <span className="w-14 h-14 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center text-3xl shadow-sm">
+                    {tripEmojis[trips.indexOf(selectedTrip) % tripEmojis.length]}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-xl font-extrabold text-gray-900 truncate">
+                      {selectedTrip.fromPlace && selectedTrip.toPlace
+                        ? `${selectedTrip.fromPlace} → ${selectedTrip.toPlace}`
+                        : selectedTrip.toPlace || selectedTrip.fromPlace || 'Trip'}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      {/* Creator badge */}
+                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
+                        <span className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-[9px] text-white font-bold">
+                          {getDisplayUsername(selectedTrip).charAt(0).toUpperCase()}
+                        </span>
+                        @{getDisplayUsername(selectedTrip)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detail rows */}
+                <div className="space-y-3 mb-5">
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <span className="text-base">📅</span>
+                    <span className="font-medium">
+                      {parseLocalDate(selectedTrip.startDate).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
+                      {' — '}
+                      {parseLocalDate(selectedTrip.endDate).toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+
+                  {selectedTrip.fromPlace && (
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <span className="text-base">📍</span>
+                      <span>From <span className="font-medium">{selectedTrip.fromPlace}</span></span>
+                    </div>
+                  )}
+
+                  {selectedTrip.toPlace && (
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <span className="text-base">🎯</span>
+                      <span>To <span className="font-medium">{selectedTrip.toPlace}</span></span>
+                    </div>
+                  )}
+
+                  {selectedTrip.modeOfTravel && (
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <span className="text-base">{modeEmoji[selectedTrip.modeOfTravel] || '🧳'}</span>
+                      <span className="font-medium">{selectedTrip.modeOfTravel.charAt(0).toUpperCase() + selectedTrip.modeOfTravel.slice(1)}</span>
+                    </div>
+                  )}
+
+                  {selectedTrip.budget != null && (
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <span className="text-base">💰</span>
+                      <span className="font-medium">${selectedTrip.budget.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+
+                {selectedTrip.description && (
+                  <div className="mb-5">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Description</h4>
+                    <p className="text-sm text-gray-700 leading-relaxed">{selectedTrip.description}</p>
+                  </div>
+                )}
+
+                {selectedTrip.interests.length > 0 && (
+                  <div className="mb-5">
+                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Interests</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTrip.interests.map((tag) => (
+                        <span key={tag} className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center gap-3 pt-5 border-t border-gray-100">
+                  <button
+                    onClick={() => setSelectedTrip(null)}
+                    className="px-4 py-2.5 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition font-medium"
+                  >
+                    Close
+                  </button>
+                  {isLoggedIn() && (
+                    <button
+                      onClick={() => toggleShortlist(selectedTrip)}
+                      className={`px-4 py-2.5 text-sm rounded-xl font-medium transition-all ${
+                        shortlistedIds.has(selectedTrip.id)
+                          ? 'bg-amber-100 text-amber-700 border border-amber-200'
+                          : 'border border-gray-200 text-gray-600 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200'
+                      }`}
+                    >
+                      {shortlistedIds.has(selectedTrip.id) ? '⭐ Shortlisted' : '☆ Shortlist'}
+                    </button>
+                  )}
+                  {isLoggedIn() && !(getCurrentUser() && selectedTrip.userId === getCurrentUser().id) && (
+                    <button
+                      disabled={interestSending === selectedTrip.id}
+                      onClick={() => handleShowInterest(selectedTrip)}
+                      className={`px-4 py-2.5 text-sm rounded-xl font-medium transition-all ${
+                        interestedTripIds.has(selectedTrip.id)
+                          ? 'bg-pink-100 text-pink-600 border border-pink-200'
+                          : 'border border-gray-200 text-gray-600 hover:bg-pink-50 hover:text-pink-600 hover:border-pink-200'
+                      } ${interestSending === selectedTrip.id ? 'opacity-50' : ''}`}
+                    >
+                      {interestedTripIds.has(selectedTrip.id) ? '❤️ Interested' : '🤍 I\'m Interested'}
+                    </button>
+                  )}
+                  {isLoggedIn() && (
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => {
+                        const trip = selectedTrip
+                        setSelectedTrip(null)
+                        planSimilarTrip(trip)
+                      }}
+                      className="flex-1 px-5 py-2.5 text-sm rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                    >
+                      ✈️ Plan a Similar Trip
+                    </motion.button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══════ AUTH GATE MODAL ═══════ */}
       <AnimatePresence>
         {showAuthModal && (
           <motion.div
@@ -277,9 +655,9 @@ const Explore: React.FC = () => {
               </button>
 
               <span className="text-5xl mb-4 block">🔒</span>
-              <h3 className="text-2xl font-extrabold text-gray-900 mb-2">Join the Adventure!</h3>
+              <h3 className="text-2xl font-extrabold text-gray-900 mb-2">Please Sign In</h3>
               <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                Sign in or create an account to shortlist destinations, plan trips, and get the full Routed experience.
+                Sign in or create an account to explore trip details and plan your own trips.
               </p>
 
               <div className="flex flex-col gap-3">

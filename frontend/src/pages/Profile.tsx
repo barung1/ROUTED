@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react'
-import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import React, { useState, useRef, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
 import logo from '../assets/logo.png'
+import api from '../api/client'
 import './profile.css'
 
 /* ── helpers ── */
@@ -48,11 +49,39 @@ const INTEREST_OPTIONS = [
 ]
 
 /* ════════════════════════════════════════════════ */
+type ProfileState = {
+  username: string
+  email: string
+  location: string
+  dateOfBirth: string
+  bio: string
+  interests: string[]
+  profilePicture: string
+  memberSince: Date
+  tripsCount: number
+  destinationsVisited: number
+}
+
+type EditableField = 'username' | 'email' | 'location' | 'dateOfBirth' | 'bio' | 'interests'
+
+const toDateInputValue = (dateValue: string | null | undefined): string => {
+  if (!dateValue) return ''
+  return dateValue.slice(0, 10)
+}
+
+const toDisplayDate = (dateValue: string | null | undefined, fallback: Date): Date => {
+  if (!dateValue) return fallback
+  return new Date(`${dateValue.slice(0, 10)}T00:00:00`)
+}
+
 const Profile: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate()
+  const settingsRef = useRef<HTMLDivElement>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Profile state - will be fetched from backend
-  const [profile, setProfile] = useState({
+  const [profile, setProfile] = useState<ProfileState>({
     username: 'JohnDoe',
     email: 'john.doe@example.com',
     location: '',
@@ -64,6 +93,9 @@ const Profile: React.FC = () => {
     tripsCount: 5,
     destinationsVisited: 12,
   })
+  const [loadingProfile, setLoadingProfile] = useState(true)
+  const [requestError, setRequestError] = useState('')
+  const [savingField, setSavingField] = useState<EditableField | null>(null)
 
   // Edit mode states
   const [isEditingUsername, setIsEditingUsername] = useState(false)
@@ -76,6 +108,79 @@ const Profile: React.FC = () => {
   const [showInterestDropdown, setShowInterestDropdown] = useState(false)
   const [showProfilePictureMenu, setShowProfilePictureMenu] = useState(false)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+
+  /* close settings dropdown on outside click */
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) setSettingsOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setRequestError('')
+      setLoadingProfile(true)
+
+      try {
+        const response = await api.get('/users/me')
+        const data = response.data
+
+        setProfile((prev) => ({
+          ...prev,
+          username: data.username ?? prev.username,
+          email: data.email ?? prev.email,
+          location: data.location ?? '',
+          dateOfBirth: toDateInputValue(data.dateOfBirth),
+          bio: data.bio ?? '',
+          interests: Array.isArray(data.interests) ? data.interests : [],
+          profilePicture: data.profilePicture || '',
+          memberSince: toDisplayDate(data.memberSince, prev.memberSince),
+          tripsCount: typeof data.tripsCount === 'number' ? data.tripsCount : 0,
+          destinationsVisited: typeof data.tripsCount === 'number' ? data.tripsCount : prev.destinationsVisited,
+        }))
+
+        try {
+          const existingUser = localStorage.getItem('routed_user')
+          const parsedUser = existingUser ? JSON.parse(existingUser) : {}
+          localStorage.setItem(
+            'routed_user',
+            JSON.stringify({
+              ...parsedUser,
+              username: data.username,
+              email: data.email,
+              location: data.location,
+              dateOfBirth: data.dateOfBirth,
+            })
+          )
+        } catch {
+          // ignore storage parsing issues
+        }
+      } catch (err) {
+        const status = (err as any)?.response?.status
+        if (status === 401) {
+          localStorage.removeItem('routed_token')
+          localStorage.removeItem('routed_user')
+          navigate('/login')
+          return
+        }
+        const message = (err as any)?.response?.data?.detail || 'Unable to load profile. Please try again.'
+        setRequestError(message)
+      } finally {
+        setLoadingProfile(false)
+      }
+    }
+
+    fetchProfile()
+  }, [navigate])
+
+  const handleLogout = () => {
+    localStorage.removeItem('routed_token')
+    localStorage.removeItem('routed_shortlisted')
+    localStorage.removeItem('routed_my_trips')
+    navigate('/')
+  }
 
   const handleProfilePictureClick = () => {
     setShowProfilePictureMenu(true)
@@ -91,24 +196,104 @@ const Profile: React.FC = () => {
     setShowProfilePictureMenu(false)
   }
 
-  const handleRemoveProfilePicture = () => {
-    setProfile((prev) => ({ ...prev, profilePicture: '' }))
+  const handleRemoveProfilePicture = async () => {
     setShowProfilePictureMenu(false)
+    setRequestError('')
+    setSavingField('username') // Use as loading indicator
+
+    try {
+      // Send empty/null profile picture to backend
+      const response = await api.put('/users/me', { profilePicture: null })
+      
+      // Update local state
+      setProfile((prev) => ({ ...prev, profilePicture: '' }))
+
+      // Update localStorage
+      try {
+        const existingUser = localStorage.getItem('routed_user')
+        const parsedUser = existingUser ? JSON.parse(existingUser) : {}
+        localStorage.setItem(
+          'routed_user',
+          JSON.stringify({
+            ...parsedUser,
+            profilePicture: null,
+          })
+        )
+      } catch {
+        // ignore storage errors
+      }
+    } catch (err: any) {
+      const message = err?.response?.data?.detail || 'Failed to remove profile picture. Please try again.'
+      setRequestError(message)
+    } finally {
+      setSavingField(null)
+    }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        console.log('File loaded successfully')
-        setProfile((prev) => ({ ...prev, profilePicture: reader.result as string }))
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/pjpeg']
+    if (!allowedTypes.includes(file.type)) {
+      setRequestError('Please select a JPEG/JPG image file')
+      return
+    }
+
+    // Validate file size (2MB max)
+    const maxSize = 2 * 1024 * 1024 // 2MB
+    if (file.size > maxSize) {
+      setRequestError('Profile picture must be 2MB or smaller')
+      return
+    }
+
+    setRequestError('')
+    setSavingField('username') // Use as loading indicator
+
+    try {
+      // Create FormData for file upload
+      const formData = new FormData()
+      formData.append('profile_picture', file)
+
+      // Upload to backend
+      const response = await api.put('/users/me/profile-picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      // Update local state with new profile picture
+      if (response.data.profilePicture) {
+        setProfile((prev) => ({ ...prev, profilePicture: response.data.profilePicture }))
       }
-      reader.onerror = () => {
-        console.error('Error reading file')
+
+      // Also update localStorage
+      try {
+        const existingUser = localStorage.getItem('routed_user')
+        const parsedUser = existingUser ? JSON.parse(existingUser) : {}
+        localStorage.setItem(
+          'routed_user',
+          JSON.stringify({
+            ...parsedUser,
+            profilePicture: response.data.profilePicture,
+          })
+        )
+      } catch {
+        // ignore storage errors
       }
-      reader.readAsDataURL(file)
-      console.log('Reading file:', file.name)
+
+      setShowProfilePictureMenu(false)
+    } catch (err: any) {
+      const message = err?.response?.data?.detail || 'Failed to upload profile picture. Please try again.'
+      setRequestError(message)
+    } finally {
+      setSavingField(null)
+    }
+
+    // Reset file input
+    if (e.target) {
+      e.target.value = ''
     }
   }
 
@@ -136,36 +321,107 @@ const Profile: React.FC = () => {
     return matches && !profile.interests.includes(option.label)
   })
 
-  const handleSave = (field: string) => {
-    // Here you would make an API call to save the updated field
-    console.log(`Saving ${field}:`, profile[field as keyof typeof profile])
-    
-    // Close the edit mode
+  const handleSave = async (field: EditableField) => {
+    setRequestError('')
+    setSavingField(field)
+
+    const payload: Record<string, unknown> = {}
     switch (field) {
       case 'username':
-        setIsEditingUsername(false)
+        payload.username = profile.username.trim()
         break
       case 'email':
-        setIsEditingEmail(false)
+        payload.email = profile.email.trim()
         break
       case 'location':
-        setIsEditingLocation(false)
+        payload.location = profile.location.trim() || null
         break
       case 'dateOfBirth':
-        setIsEditingDateOfBirth(false)
+        payload.dateOfBirth = profile.dateOfBirth || null
         break
       case 'bio':
-        setIsEditingBio(false)
+        payload.bio = profile.bio.trim() || null
         break
       case 'interests':
-        setIsEditingInterests(false)
+        payload.interests = profile.interests
         break
     }
+
+    try {
+      const response = await api.put('/users/me', payload)
+      const updatedUser = response.data
+
+      setProfile((prev) => ({
+        ...prev,
+        username: updatedUser.username ?? prev.username,
+        email: updatedUser.email ?? prev.email,
+        location: updatedUser.location ?? '',
+        dateOfBirth: toDateInputValue(updatedUser.dateOfBirth),
+        bio: updatedUser.bio ?? '',
+        interests: Array.isArray(updatedUser.interests) ? updatedUser.interests : prev.interests,
+      }))
+
+      try {
+        const existingUser = localStorage.getItem('routed_user')
+        const parsedUser = existingUser ? JSON.parse(existingUser) : {}
+        localStorage.setItem(
+          'routed_user',
+          JSON.stringify({
+            ...parsedUser,
+            username: updatedUser.username,
+            email: updatedUser.email,
+            location: updatedUser.location,
+            dateOfBirth: updatedUser.dateOfBirth,
+          })
+        )
+      } catch {
+        // ignore storage parsing issues
+      }
+
+      switch (field) {
+        case 'username':
+          setIsEditingUsername(false)
+          break
+        case 'email':
+          setIsEditingEmail(false)
+          break
+        case 'location':
+          setIsEditingLocation(false)
+          break
+        case 'dateOfBirth':
+          setIsEditingDateOfBirth(false)
+          break
+        case 'bio':
+          setIsEditingBio(false)
+          break
+        case 'interests':
+          setIsEditingInterests(false)
+          break
+      }
+    } catch (err) {
+      const message = (err as any)?.response?.data?.detail || `Failed to save ${field}. Please try again.`
+      setRequestError(message)
+    } finally {
+      setSavingField(null)
+    }
+  }
+
+  if (loadingProfile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-gray-600 text-lg font-medium">Loading profile...</div>
+      </div>
+    )
   }
 
   /* ── render ── */
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+      {requestError && (
+        <div className="max-w-4xl mx-auto px-4 md:px-8 pt-4">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{requestError}</div>
+        </div>
+      )}
       
       {/* ═══════════ HEADER ═══════════ */}
       <header className="w-full sticky top-0 z-30 backdrop-blur-md bg-white/80 border-b border-gray-200/60">
@@ -175,20 +431,84 @@ const Profile: React.FC = () => {
             <img src={logo} alt="Routed logo" className="h-35 w-auto object-contain" />
           </Link>
 
-          {/* Right actions */}
-          <button
-            type="button"
-            className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300"
-            aria-label="Settings"
-            title="Settings"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          </button>
+          {/* Right actions — Settings gear with dropdown */}
+          <div ref={settingsRef} className="relative">
+            <motion.button
+              type="button"
+              whileHover={{ rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 15 }}
+              onClick={() => setSettingsOpen((p) => !p)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300 ${
+                settingsOpen
+                  ? 'bg-white text-indigo-600 ring-2 ring-indigo-300'
+                  : 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white'
+              }`}
+              aria-label="Settings"
+              title="Settings"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </motion.button>
+
+            {/* Settings dropdown */}
+            <AnimatePresence>
+              {settingsOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-200/60 py-2 z-50"
+                >
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/trips"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    My Trips
+                  </Link>
+                  <Link
+                    to="/explore"
+                    onClick={() => setSettingsOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+                    Explore
+                  </Link>
+                  <hr className="my-1.5 border-gray-100" />
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition rounded-lg mx-1 text-left"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    Logout
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
+
+      {/* ── Back to Dashboard ── */}
+      <div className="max-w-4xl mx-auto px-4 md:px-8 pt-4">
+        <Link to="/dashboard" className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium transition">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          Back to Dashboard
+        </Link>
+      </div>
 
       {/* ═══════════ MAIN ═══════════ */}
       <main className="max-w-4xl mx-auto px-4 md:px-8 py-8">
@@ -201,13 +521,20 @@ const Profile: React.FC = () => {
             <div className="absolute -bottom-16 left-8">
               <div className="relative group">
                 {/* Profile Picture */}
-                <div className="w-32 h-32 rounded-full border-4 border-white bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg flex items-center justify-center overflow-hidden">
+                <div className="w-32 h-32 rounded-full border-4 border-white bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg flex items-center justify-center overflow-hidden relative">
                   {profile.profilePicture ? (
                     <img src={profile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 text-white" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v1.2c0 .7.5 1.2 1.2 1.2h16.8c.7 0 1.2-.5 1.2-1.2v-1.2c0-3.2-6.4-4.8-9.6-4.8z"/>
                     </svg>
+                  )}
+                  
+                  {/* Loading Overlay */}
+                  {savingField === 'username' && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
                   )}
                 </div>
                 
@@ -269,14 +596,14 @@ const Profile: React.FC = () => {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,.jpg,.jpeg"
                   onChange={handleFileChange}
                   className="hidden"
                 />
                 <input
                   ref={cameraInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,.jpg,.jpeg"
                   capture="environment"
                   onChange={handleFileChange}
                   className="hidden"
@@ -289,11 +616,6 @@ const Profile: React.FC = () => {
               <div className="text-white text-center">
                 <div className="text-3xl font-bold">{profile.tripsCount}</div>
                 <div className="text-sm text-indigo-100">Trips</div>
-              </div>
-              <div className="h-12 w-px bg-white/30"></div>
-              <div className="text-white text-center">
-                <div className="text-3xl font-bold">{profile.destinationsVisited}</div>
-                <div className="text-sm text-indigo-100">Destinations</div>
               </div>
               <div className="h-12 w-px bg-white/30"></div>
               <div className="text-white text-center">
@@ -321,9 +643,10 @@ const Profile: React.FC = () => {
                     />
                     <button
                       onClick={() => handleSave('username')}
+                      disabled={savingField === 'username'}
                       className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                     >
-                      Save
+                      {savingField === 'username' ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={() => setIsEditingUsername(false)}
@@ -367,9 +690,10 @@ const Profile: React.FC = () => {
                     />
                     <button
                       onClick={() => handleSave('email')}
+                      disabled={savingField === 'email'}
                       className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                     >
-                      Save
+                      {savingField === 'email' ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={() => setIsEditingEmail(false)}
@@ -414,9 +738,10 @@ const Profile: React.FC = () => {
                     />
                     <button
                       onClick={() => handleSave('location')}
+                      disabled={savingField === 'location'}
                       className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                     >
-                      Save
+                      {savingField === 'location' ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={() => setIsEditingLocation(false)}
@@ -460,9 +785,10 @@ const Profile: React.FC = () => {
                     />
                     <button
                       onClick={() => handleSave('dateOfBirth')}
+                      disabled={savingField === 'dateOfBirth'}
                       className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                     >
-                      Save
+                      {savingField === 'dateOfBirth' ? 'Saving...' : 'Save'}
                     </button>
                     <button
                       onClick={() => setIsEditingDateOfBirth(false)}
@@ -576,9 +902,10 @@ const Profile: React.FC = () => {
                     <div className="flex flex-col gap-2">
                       <button
                         onClick={() => handleSave('interests')}
+                        disabled={savingField === 'interests'}
                         className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                       >
-                        Save
+                        {savingField === 'interests' ? 'Saving...' : 'Save'}
                       </button>
                       <button
                         onClick={() => setIsEditingInterests(false)}
@@ -635,9 +962,10 @@ const Profile: React.FC = () => {
                     <div className="flex flex-col gap-2">
                       <button
                         onClick={() => handleSave('bio')}
+                        disabled={savingField === 'bio'}
                         className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
                       >
-                        Save
+                        {savingField === 'bio' ? 'Saving...' : 'Save'}
                       </button>
                       <button
                         onClick={() => setIsEditingBio(false)}

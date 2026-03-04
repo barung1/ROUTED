@@ -98,12 +98,23 @@ def create_trip(
 			status_code=status.HTTP_404_NOT_FOUND,
 			detail="User not found",
 		)
-	location = db.execute(select(Location).where(Location.id == trip.locationId)).scalars().first()
-	if not location:
-		raise HTTPException(
-			status_code=status.HTTP_404_NOT_FOUND,
-			detail="Location not found",
-		)
+	# If locationId is not provided, auto-assign the first available location
+	location_id = trip.locationId
+	if location_id is None:
+		first_location = db.execute(select(Location)).scalars().first()
+		if not first_location:
+			raise HTTPException(
+				status_code=status.HTTP_404_NOT_FOUND,
+				detail="No locations available. Please seed the database.",
+			)
+		location_id = first_location.id
+	else:
+		location = db.execute(select(Location).where(Location.id == location_id)).scalars().first()
+		if not location:
+			raise HTTPException(
+				status_code=status.HTTP_404_NOT_FOUND,
+				detail="Location not found",
+			)
 	new_trip = Trip(
 		start_date=trip.startDate,
 		end_date=trip.endDate,
@@ -115,7 +126,7 @@ def create_trip(
 		budget=trip.budget,
 		interests=trip.interests,
 		description=trip.description,
-		location_id=trip.locationId,
+		location_id=location_id,
 	)
 	new_trip.user = user
 	db.add(new_trip)

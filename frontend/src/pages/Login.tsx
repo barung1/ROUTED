@@ -29,7 +29,15 @@ const Login: React.FC = () => {
       }
 
       const resp = await api.post('/users/login', { usernameOrEmail: username, password })
+      // store token and user public info for client-side display
       localStorage.setItem('routed_token', resp.data.access_token)
+      try {
+        if (resp.data.user) {
+          localStorage.setItem('routed_user', JSON.stringify(resp.data.user))
+        }
+      } catch {
+        // ignore
+      }
       // navigate to dashboard on success
       navigate('/dashboard')
     } catch (err) {
