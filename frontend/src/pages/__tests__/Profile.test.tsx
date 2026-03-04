@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 
@@ -345,6 +345,247 @@ describe('Profile', () => {
     await user.click(screen.getByLabelText('Edit profile picture'))
     expect(screen.getByText('Choose from Gallery')).toBeInTheDocument()
     expect(screen.getByText('Take a Photo')).toBeInTheDocument()
+  })
+
+  /* ─── Profile picture display ─── */
+
+  it('displays profile picture from API when available', async () => {
+    mockGet.mockResolvedValue({
+      data: { ...MOCK_PROFILE, profilePicture: 'https://example.com/photo.jpg' },
+    })
+    await renderProfile()
+    const img = screen.getByAltText('Profile')
+    expect(img).toBeInTheDocument()
+    expect(img).toHaveAttribute('src', 'https://example.com/photo.jpg')
+  })
+
+  it('shows default avatar icon when no profile picture', async () => {
+    mockGet.mockResolvedValue({
+      data: { ...MOCK_PROFILE, profilePicture: '' },
+    })
+    await renderProfile()
+    expect(screen.queryByAltText('Profile')).not.toBeInTheDocument()
+  })
+
+  /* ─── Remove profile picture ─── */
+
+  it('shows Remove Picture option when profile picture exists', async () => {
+    mockGet.mockResolvedValue({
+      data: { ...MOCK_PROFILE, profilePicture: 'https://example.com/photo.jpg' },
+    })
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    expect(screen.getByText('Remove Picture')).toBeInTheDocument()
+  })
+
+  it('does not show Remove Picture option when no profile picture', async () => {
+    mockGet.mockResolvedValue({
+      data: { ...MOCK_PROFILE, profilePicture: '' },
+    })
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    expect(screen.queryByText('Remove Picture')).not.toBeInTheDocument()
+  })
+
+  it('removes profile picture via PUT /users/me with null', async () => {
+    mockGet.mockResolvedValue({
+      data: { ...MOCK_PROFILE, profilePicture: 'https://example.com/photo.jpg' },
+    })
+    mockPut.mockResolvedValue({ data: { ...MOCK_PROFILE, profilePicture: null } })
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    await user.click(screen.getByText('Remove Picture'))
+    await waitFor(() => {
+      expect(mockPut).toHaveBeenCalledWith('/users/me', { profilePicture: null })
+    })
+    // Profile picture should be removed from the DOM
+    await waitFor(() => {
+      expect(screen.queryByAltText('Profile')).not.toBeInTheDocument()
+    })
+  })
+
+  it('updates localStorage when profile picture is removed', async () => {
+    localStorage.setItem('routed_user', JSON.stringify({ username: 'JohnDoe', profilePicture: 'old.jpg' }))
+    mockGet.mockResolvedValue({
+      data: { ...MOCK_PROFILE, profilePicture: 'https://example.com/photo.jpg' },
+    })
+    mockPut.mockResolvedValue({ data: { ...MOCK_PROFILE, profilePicture: null } })
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    await user.click(screen.getByText('Remove Picture'))
+    await waitFor(() => {
+      expect(mockPut).toHaveBeenCalledWith('/users/me', { profilePicture: null })
+    })
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('routed_user') || '{}')
+      expect(stored.profilePicture).toBeNull()
+    })
+  })
+
+  it('shows error when remove profile picture API fails', async () => {
+    mockGet.mockResolvedValue({
+      data: { ...MOCK_PROFILE, profilePicture: 'https://example.com/photo.jpg' },
+    })
+    mockPut.mockRejectedValue({ response: { data: { detail: 'Failed to remove picture' } } })
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    await user.click(screen.getByText('Remove Picture'))
+    await waitFor(() => {
+      expect(screen.getByText('Failed to remove picture')).toBeInTheDocument()
+    })
+  })
+
+  /* ─── Profile picture upload ─── */
+
+  it('uploads a JPEG file via PUT /users/me/profile-picture', async () => {
+    mockPut.mockResolvedValue({ data: { ...MOCK_PROFILE, profilePicture: 'https://example.com/new.jpg' } })
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    await user.click(screen.getByText('Choose from Gallery'))
+
+    const file = new File(['dummy-jpeg-data'], 'photo.jpg', { type: 'image/jpeg' })
+    const fileInput = document.querySelector('input[type="file"]:not([capture])') as HTMLInputElement
+    expect(fileInput).not.toBeNull()
+
+    await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      expect(mockPut).toHaveBeenCalledWith(
+        '/users/me/profile-picture',
+        expect.any(FormData),
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
+    })
+  })
+
+  it('updates profile picture in state after successful upload', async () => {
+    mockPut.mockResolvedValue({ data: { ...MOCK_PROFILE, profilePicture: 'https://example.com/uploaded.jpg' } })
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    await user.click(screen.getByText('Choose from Gallery'))
+
+    const file = new File(['dummy-jpeg-data'], 'photo.jpg', { type: 'image/jpeg' })
+    const fileInput = document.querySelector('input[type="file"]:not([capture])') as HTMLInputElement
+    await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      const img = screen.getByAltText('Profile')
+      expect(img).toHaveAttribute('src', 'https://example.com/uploaded.jpg')
+    })
+  })
+
+  it('updates localStorage after successful profile picture upload', async () => {
+    localStorage.setItem('routed_user', JSON.stringify({ username: 'JohnDoe' }))
+    mockPut.mockResolvedValue({ data: { ...MOCK_PROFILE, profilePicture: 'https://example.com/uploaded.jpg' } })
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    await user.click(screen.getByText('Choose from Gallery'))
+
+    const file = new File(['dummy-jpeg-data'], 'photo.jpg', { type: 'image/jpeg' })
+    const fileInput = document.querySelector('input[type="file"]:not([capture])') as HTMLInputElement
+    await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem('routed_user') || '{}')
+      expect(stored.profilePicture).toBe('https://example.com/uploaded.jpg')
+    })
+  })
+
+  /* ─── Profile picture upload validation ─── */
+
+  it('rejects non-JPEG file type', async () => {
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    await user.click(screen.getByText('Choose from Gallery'))
+
+    const file = new File(['png-data'], 'photo.png', { type: 'image/png' })
+    const fileInput = document.querySelector('input[type="file"]:not([capture])') as HTMLInputElement
+    // Use fireEvent to bypass the HTML accept attribute filter
+    fireEvent.change(fileInput, { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Please select a JPEG/JPG image file')).toBeInTheDocument()
+    })
+    expect(mockPut).not.toHaveBeenCalledWith('/users/me/profile-picture', expect.anything(), expect.anything())
+  })
+
+  it('rejects file larger than 2MB', async () => {
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    await user.click(screen.getByText('Choose from Gallery'))
+
+    // Create a file just over 2MB
+    const largeContent = new ArrayBuffer(2 * 1024 * 1024 + 1)
+    const file = new File([largeContent], 'large.jpg', { type: 'image/jpeg' })
+    const fileInput = document.querySelector('input[type="file"]:not([capture])') as HTMLInputElement
+    // Use fireEvent to bypass the browser file size check
+    fireEvent.change(fileInput, { target: { files: [file] } })
+
+    await waitFor(() => {
+      expect(screen.getByText('Profile picture must be 2MB or smaller')).toBeInTheDocument()
+    })
+    expect(mockPut).not.toHaveBeenCalledWith('/users/me/profile-picture', expect.anything(), expect.anything())
+  })
+
+  /* ─── Profile picture upload error handling ─── */
+
+  it('shows error message when upload API fails', async () => {
+    mockPut.mockRejectedValue({ response: { data: { detail: 'Upload failed' } } })
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    await user.click(screen.getByText('Choose from Gallery'))
+
+    const file = new File(['dummy-jpeg-data'], 'photo.jpg', { type: 'image/jpeg' })
+    const fileInput = document.querySelector('input[type="file"]:not([capture])') as HTMLInputElement
+    await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      expect(screen.getByText('Upload failed')).toBeInTheDocument()
+    })
+  })
+
+  it('shows default error message when upload fails without detail', async () => {
+    mockPut.mockRejectedValue({ response: { status: 500 } })
+    await renderProfile()
+    const user = userEvent.setup()
+    await user.click(screen.getByLabelText('Edit profile picture'))
+    await user.click(screen.getByText('Choose from Gallery'))
+
+    const file = new File(['dummy-jpeg-data'], 'photo.jpg', { type: 'image/jpeg' })
+    const fileInput = document.querySelector('input[type="file"]:not([capture])') as HTMLInputElement
+    await user.upload(fileInput, file)
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to upload profile picture. Please try again.')).toBeInTheDocument()
+    })
+  })
+
+  /* ─── File input attributes ─── */
+
+  it('gallery file input only accepts JPEG files', async () => {
+    await renderProfile()
+    const fileInput = document.querySelector('input[type="file"]:not([capture])') as HTMLInputElement
+    expect(fileInput).not.toBeNull()
+    expect(fileInput.getAttribute('accept')).toBe('image/jpeg,image/jpg,.jpg,.jpeg')
+  })
+
+  it('camera file input only accepts JPEG files and has capture attribute', async () => {
+    await renderProfile()
+    const cameraInput = document.querySelector('input[type="file"][capture]') as HTMLInputElement
+    expect(cameraInput).not.toBeNull()
+    expect(cameraInput.getAttribute('accept')).toBe('image/jpeg,image/jpg,.jpg,.jpeg')
+    expect(cameraInput.getAttribute('capture')).toBe('environment')
   })
 
   /* ─── Logout ─── */
