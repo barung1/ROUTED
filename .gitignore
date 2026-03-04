@@ -12,3 +12,5 @@ config.toml
 .runner_system_id
 backend/notificationService/bin/*
 backend/mainService/pkg/*
+frontend/test-reports/
+frontend/coverage/

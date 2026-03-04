@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 
@@ -303,12 +303,14 @@ describe('Profile', () => {
     const input = screen.getByPlaceholderText(/Search interests or type your own/i)
     await user.type(input, 'Skydiving Adventures')
     await user.click(screen.getByRole('button', { name: /^Add$/i }))
-    // Wait for the chip to appear and DOM to stabilise after onBlur timeout
+    // Wait for the chip to appear and the 120ms onBlur timeout to close the dropdown
     await waitFor(() => {
       expect(screen.getByLabelText('Remove Skydiving Adventures')).toBeInTheDocument()
     })
-    // Flush the 120ms onBlur setTimeout so the dropdown closes before we click Remove
-    await act(async () => { await new Promise((r) => setTimeout(r, 150)) })
+    await new Promise((r) => setTimeout(r, 200))
+    await waitFor(() => {
+      expect(screen.getByLabelText('Remove Skydiving Adventures')).toBeInTheDocument()
+    })
     await user.click(screen.getByLabelText('Remove Skydiving Adventures'))
     await waitFor(() => {
       expect(screen.queryByText('Skydiving Adventures')).not.toBeInTheDocument()
@@ -322,12 +324,14 @@ describe('Profile', () => {
     const input = screen.getByPlaceholderText(/Search interests or type your own/i)
     await user.type(input, 'Nightlife')
     await user.click(screen.getByRole('button', { name: /^Add$/i }))
-    // Wait for the chip to appear and DOM to stabilise after onBlur timeout
+    // Wait for the chip to appear and the 120ms onBlur timeout to close the dropdown
     await waitFor(() => {
       expect(screen.getByText('Nightlife')).toBeInTheDocument()
     })
-    // Flush the 120ms onBlur setTimeout so the dropdown closes before we click Save
-    await act(async () => { await new Promise((r) => setTimeout(r, 150)) })
+    await new Promise((r) => setTimeout(r, 200))
+    await waitFor(() => {
+      expect(screen.getByText('Nightlife')).toBeInTheDocument()
+    })
     const saveButtons = screen.getAllByRole('button', { name: /Save/i })
     await user.click(saveButtons[0])
     await waitFor(() => {
