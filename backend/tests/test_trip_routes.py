@@ -106,6 +106,33 @@ def test_create_trip_same_dates_allowed(client: TestClient, sample_user: User, s
 	assert body["endDate"] == "2026-03-05"
 
 
+def test_create_trip_with_extended_fields(client: TestClient, sample_user: User, sample_location: Location):
+	"""Test trip creation with extended trip fields and owner username."""
+	payload = {
+		"locationId": str(sample_location.id),
+		"startDate": "2026-06-01",
+		"endDate": "2026-06-07",
+		"status": "planned",
+		"fromPlace": "Pune",
+		"toPlace": "Goa",
+		"modeOfTravel": "flight",
+		"budget": 15400.5,
+		"interests": ["beach", "food"],
+		"description": "Summer trip",
+	}
+	response = client.post("/trips/", json=payload, headers=_auth_header(sample_user.id))
+
+	assert response.status_code == 201
+	body = response.json()
+	assert body["userName"] == sample_user.username
+	assert body["fromPlace"] == payload["fromPlace"]
+	assert body["toPlace"] == payload["toPlace"]
+	assert body["modeOfTravel"] == payload["modeOfTravel"]
+	assert body["budget"] == payload["budget"]
+	assert body["interests"] == payload["interests"]
+	assert body["description"] == payload["description"]
+
+
 # ========== LIST ALL TRIPS TESTS ==========
 
 def test_list_all_trips_success(client: TestClient, db_session: Session, sample_user: User, multiple_locations: list[Location]):
@@ -456,6 +483,39 @@ def test_update_trip_same_dates_allowed(client: TestClient, db_session: Session,
 	response = client.put(f"/trips/{trip.id}", json=payload, headers=_auth_header(sample_user.id))
 
 	assert response.status_code == 200
+
+
+def test_update_trip_extended_fields_success(client: TestClient, db_session: Session, sample_user: User, sample_location: Location):
+	"""Test updating trip with extended fields."""
+	trip = Trip(
+		id=uuid4(),
+		start_date=date(2026, 7, 1),
+		end_date=date(2026, 7, 5),
+		status=TripStatus.PLANNED,
+		location_id=sample_location.id,
+	)
+	trip.user = sample_user
+	db_session.add(trip)
+	db_session.commit()
+
+	payload = {
+		"fromPlace": "Mumbai",
+		"toPlace": "Delhi",
+		"modeOfTravel": "train",
+		"budget": 9800,
+		"interests": ["history"],
+		"description": "Work + leisure",
+	}
+	response = client.put(f"/trips/{trip.id}", json=payload, headers=_auth_header(sample_user.id))
+
+	assert response.status_code == 200
+	body = response.json()
+	assert body["fromPlace"] == payload["fromPlace"]
+	assert body["toPlace"] == payload["toPlace"]
+	assert body["modeOfTravel"] == payload["modeOfTravel"]
+	assert body["budget"] == payload["budget"]
+	assert body["interests"] == payload["interests"]
+	assert body["description"] == payload["description"]
 
 
 # ========== DELETE TRIP TESTS ==========
