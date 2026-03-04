@@ -13,6 +13,7 @@ class RegistrationUserModel(BaseModel):
 	dateOfBirth: date | None = None
 	interests: list[str] = []
 	bio: str | None = None
+	profilePicture: str | None = None
 
 
 class UserPublicModel(BaseModel):
@@ -25,6 +26,7 @@ class UserPublicModel(BaseModel):
 	dateOfBirth: date | None = None
 	interests: list[str] = []
 	bio: str | None = None
+	profilePicture: str | None = None
 	dateJoined: date | None = None
 
 
@@ -47,6 +49,7 @@ class UpdateUserModel(BaseModel):
 	dateOfBirth: date | None = None
 	interests: list[str] | None = None
 	bio: str | None = None
+	profilePicture: str | None = None
 
 
 class UserProfileModel(BaseModel):
@@ -57,5 +60,6 @@ class UserProfileModel(BaseModel):
 	dateOfBirth: date | None = None
 	interests: list[str] = []
 	bio: str | None = None
+	profilePicture: str | None = None
 	tripsCount: int = 0
 	memberSince: date | None = None

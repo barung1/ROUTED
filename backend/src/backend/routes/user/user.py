@@ -1,9 +1,10 @@
 from json import load
 from operator import ge
 import os
+import base64
 from uuid import UUID
 from backend.config.env_vars import load_env_variables
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
@@ -94,6 +95,7 @@ def _to_user_public(user: User) -> UserPublicModel:
 		dateOfBirth=user.date_of_birth,
 		interests=user.interests or [],
 		bio=user.bio,
+		profilePicture=user.profile_picture,
 		dateJoined=user.date_joined,
 	)
 
@@ -129,6 +131,7 @@ def register_user(user: RegistrationUserModel, db: Session = Depends(get_db_sess
 		date_of_birth=user.dateOfBirth,
 		interests=user.interests,
 		bio=user.bio,
+		profile_picture=user.profilePicture,
 	)
 	db.add(new_user)
 	try:
@@ -166,6 +169,7 @@ def get_my_profile(
 		dateOfBirth=user.date_of_birth,
 		interests=user.interests or [],
 		bio=user.bio,
+		profilePicture=user.profile_picture,
 		tripsCount=len(user.trips or []),
 		memberSince=user.date_joined,
 	)
@@ -188,6 +192,7 @@ def get_user_by_id(user_id: UUID, db: Session = Depends(get_db_session)) -> User
 		dateOfBirth=user.date_of_birth,
 		interests=user.interests or [],
 		bio=user.bio,
+		profilePicture=user.profile_picture,
 		dateJoined=user.date_joined,
 	)
 
@@ -262,6 +267,8 @@ def update_user(update: UpdateUserModel, user_id: UUID = Depends(get_current_use
 			user.interests = update.interests
 		if update.bio is not None:
 			user.bio = update.bio
+		if update.profilePicture is not None:
+			user.profile_picture = update.profilePicture
 		db.commit()
 		db.refresh(user)
 		return _to_user_public(user)
@@ -279,6 +286,56 @@ def update_user(update: UpdateUserModel, user_id: UUID = Depends(get_current_use
 		raise HTTPException(
 			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
 			detail="Failed to retrieve user for update",
+		)
+
+
+@router.put("/me/profile-picture", response_model=UserPublicModel)
+async def update_profile_picture(
+	profile_picture: UploadFile = File(...),
+	user_id: UUID = Depends(get_current_user_id),
+	db: Session = Depends(get_db_session),
+) -> UserPublicModel:
+	allowed_content_types = {"image/jpeg", "image/jpg", "image/pjpeg"}
+	if profile_picture.content_type not in allowed_content_types:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="Profile picture must be a JPEG/JPG image",
+		)
+
+	content = await profile_picture.read()
+	if not content:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="Profile picture file is empty",
+		)
+
+	max_size_bytes = 2 * 1024 * 1024
+	if len(content) > max_size_bytes:
+		raise HTTPException(
+			status_code=status.HTTP_400_BAD_REQUEST,
+			detail="Profile picture must be 2MB or smaller",
+		)
+
+	user = db.execute(select(User).where(User.id == user_id)).scalars().first()
+	if not user:
+		raise HTTPException(
+			status_code=status.HTTP_404_NOT_FOUND,
+			detail="User not found",
+		)
+
+	encoded = base64.b64encode(content).decode("ascii")
+	user.profile_picture = f"data:image/jpeg;base64,{encoded}"
+
+	try:
+		db.commit()
+		db.refresh(user)
+		return _to_user_public(user)
+	except Exception as e:
+		db.rollback()
+		logger.error(f"Failed to update profile picture for user {user_id}: {e}")
+		raise HTTPException(
+			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			detail="Failed to update profile picture",
 		)
 	
 

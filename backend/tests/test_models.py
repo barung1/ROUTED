@@ -12,7 +12,7 @@ from tests.conftest import get_table_name
 
 def test_users_table_columns():
 	table = Base.metadata.tables[get_table_name("users")]
-	assert {"id", "username", "email", "first_name", "last_name", "hashed_password"}.issubset(
+	assert {"id", "username", "email", "first_name", "last_name", "hashed_password", "profile_picture"}.issubset(
 		set(table.c.keys())
 	)
 	assert table.c.username.nullable is False
