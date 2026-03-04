@@ -1,14 +1,24 @@
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
 import Suggestions from '../Suggestions'
 
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 describe('Suggestions', () => {
-  it('renders the heading', () => {
-    render(<Suggestions />)
-    expect(screen.getByText('Suggestions')).toBeInTheDocument()
+  beforeEach(() => {
+    mockNavigate.mockClear()
   })
 
-  it('renders the description text', () => {
-    render(<Suggestions />)
-    expect(screen.getByText('Suggested travel partners and trips.')).toBeInTheDocument()
+  it('redirects to /dashboard with openTab recs', () => {
+    render(
+      <MemoryRouter>
+        <Suggestions />
+      </MemoryRouter>,
+    )
+    expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { state: { openTab: 'recs' }, replace: true })
   })
 })

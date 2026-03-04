@@ -69,6 +69,7 @@ const Explore: React.FC = () => {
   const [shortlistedIds, setShortlistedIds] = useState<Set<string>>(new Set())
   const [interestedTripIds, setInterestedTripIds] = useState<Set<string>>(new Set())
   const [interestSending, setInterestSending] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
   const navigate = useNavigate()
 
   const isLoggedIn = () => !!localStorage.getItem('routed_token')
@@ -178,7 +179,15 @@ const Explore: React.FC = () => {
   /* ── Show interest on a trip ── */
   const handleShowInterest = (trip: TripItem) => {
     const currentUser = getCurrentUser()
-    if (!currentUser || !trip.userId) return
+    if (!currentUser) {
+      setShowAuthModal(true)
+      return
+    }
+    if (!trip.userId) {
+      setToast('This trip has no owner — cannot express interest.')
+      setTimeout(() => setToast(null), 3000)
+      return
+    }
 
     setInterestSending(trip.id)
 
@@ -192,6 +201,7 @@ const Explore: React.FC = () => {
       const updated = allInterests.filter((r) => r.id !== existing.id)
       localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(updated))
       setInterestedTripIds((prev) => { const s = new Set(prev); s.delete(trip.id); return s })
+      setToast('Interest removed.')
     } else {
       // Add new interest
       const record: InterestRecord = {
@@ -210,14 +220,29 @@ const Explore: React.FC = () => {
       allInterests.push(record)
       localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(allInterests))
       setInterestedTripIds((prev) => new Set(prev).add(trip.id))
+      setToast(`❤️ Interest sent to @${record.toUsername}!`)
     }
 
-    setTimeout(() => setInterestSending(null), 300)
+    setTimeout(() => { setInterestSending(null); setToast(null) }, 3000)
   }
 
   /* ═══════════════ RENDER ═══════════════ */
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 relative">
+
+      {/* ── Toast notification ── */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold bg-indigo-600 text-white"
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Hero header ── */}
       <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 pt-8 pb-20 px-4 md:px-8 relative overflow-hidden">

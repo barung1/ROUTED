@@ -44,6 +44,7 @@ interface MatchDetail {
   matchEnd: string
   createdAt: string
   myUserId: string
+  isUserA: boolean
   myTrip: TripBasic
   otherUser: UserBasic
   otherTrip: TripBasic
@@ -130,6 +131,13 @@ const Dashboard: React.FC = () => {
   const [interestActionLoading, setInterestActionLoading] = useState<string | null>(null)
   const [rightTab, setRightTab] = useState<'recs' | 'received' | 'given' | 'messages'>('recs')
 
+  /* ── toast / notification state ── */
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null)
+  const showToast = (message: string, type: 'success' | 'info' | 'error' = 'info') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 4000)
+  }
+
   const getCurrentUser = () => {
     try { return JSON.parse(localStorage.getItem('routed_user') || 'null') } catch { return null }
   }
@@ -212,14 +220,9 @@ const Dashboard: React.FC = () => {
   const handleRecAccept = async (match: MatchDetail) => {
     setRecActionLoading(match.id)
     try {
-      let updated: MatchDetail
-      try {
-        const res = await api.put(`/matches/${match.id}`, { status: 'user_a_accepted' })
-        updated = res.data as MatchDetail
-      } catch {
-        const res = await api.put(`/matches/${match.id}`, { status: 'user_b_accepted' })
-        updated = res.data as MatchDetail
-      }
+      const acceptStatus = match.isUserA ? 'user_a_accepted' : 'user_b_accepted'
+      const res = await api.put(`/matches/${match.id}`, { status: acceptStatus })
+      const updated = res.data as MatchDetail
       // Remove from recommendations
       setRecommendations((prev) => prev.filter((m) => m.id !== match.id))
 
@@ -231,7 +234,7 @@ const Dashboard: React.FC = () => {
       }
       const msg: MatchMessage = {
         id: crypto.randomUUID(),
-        type: isBothAccepted ? 'both_accepted' : 'both_accepted', // we'll show as success even for partial
+        type: isBothAccepted ? 'both_accepted' : 'rejected',
         matchId: match.id,
         otherUsername: match.otherUser.username,
         locationName: match.location.name,
@@ -250,8 +253,14 @@ const Dashboard: React.FC = () => {
         localStorage.setItem(LS_MATCH_MSGS_KEY, JSON.stringify(updatedMsgs))
         setMatchMessages(updatedMsgs)
         setRightTab('messages')
+        showToast(`🎉 You and @${match.otherUser.username} are matched!`, 'success')
+      } else {
+        // Partial accept — waiting for the other user
+        showToast(`✓ Accepted! Waiting for @${match.otherUser.username} to accept.`, 'info')
       }
-    } catch { /* ignore */ } finally {
+    } catch {
+      showToast('Failed to accept recommendation. Please try again.', 'error')
+    } finally {
       setRecActionLoading(null)
     }
   }
@@ -284,7 +293,10 @@ const Dashboard: React.FC = () => {
       const updatedMsgs = [msg, ...existing]
       localStorage.setItem(LS_MATCH_MSGS_KEY, JSON.stringify(updatedMsgs))
       setMatchMessages(updatedMsgs)
-    } catch { /* ignore */ } finally {
+      showToast('Recommendation declined.', 'info')
+    } catch {
+      showToast('Failed to decline recommendation. Please try again.', 'error')
+    } finally {
       setRecActionLoading(null)
     }
   }
@@ -384,6 +396,15 @@ const Dashboard: React.FC = () => {
       // clear the state so refreshing won't re-open the form
       window.history.replaceState({}, '')
     }
+
+    // Switch to a specific tab when navigated from Suggestions or other pages
+    if (state?.openTab) {
+      const validTabs = ['recs', 'received', 'given', 'messages'] as const
+      if (validTabs.includes(state.openTab)) {
+        setRightTab(state.openTab)
+      }
+      window.history.replaceState({}, '')
+    }
   }, [location.state])
 
   /* close dropdowns on outside click */
@@ -452,6 +473,26 @@ const Dashboard: React.FC = () => {
   /* ── render ── */
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+
+      {/* ── Toast notification ── */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -30 }}
+            className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold ${
+              toast.type === 'success'
+                ? 'bg-emerald-600 text-white'
+                : toast.type === 'error'
+                ? 'bg-red-600 text-white'
+                : 'bg-indigo-600 text-white'
+            }`}
+          >
+            {toast.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ═══════════ HEADER ═══════════ */}
       <header className="w-full sticky top-0 z-30 backdrop-blur-md bg-white/80 border-b border-gray-200/60">

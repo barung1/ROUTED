@@ -43,6 +43,7 @@ interface MatchDetail {
   matchEnd: string
   createdAt: string
   myUserId: string
+  isUserA: boolean
   myTrip: TripBasic
   otherUser: UserBasic
   otherTrip: TripBasic

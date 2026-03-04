@@ -282,7 +282,10 @@ describe('Profile', () => {
     const input = screen.getByPlaceholderText(/Search interests or type your own/i)
     await user.type(input, 'Skydiving Adventures')
     await user.click(screen.getByRole('button', { name: /^Add$/i }))
-    expect(screen.getByText('Skydiving Adventures')).toBeInTheDocument()
+    // Wait for the chip to appear and DOM to stabilise after onBlur timeout
+    await waitFor(() => {
+      expect(screen.getByLabelText('Remove Skydiving Adventures')).toBeInTheDocument()
+    })
     await user.click(screen.getByLabelText('Remove Skydiving Adventures'))
     await waitFor(() => {
       expect(screen.queryByText('Skydiving Adventures')).not.toBeInTheDocument()
@@ -296,6 +299,10 @@ describe('Profile', () => {
     const input = screen.getByPlaceholderText(/Search interests or type your own/i)
     await user.type(input, 'Nightlife')
     await user.click(screen.getByRole('button', { name: /^Add$/i }))
+    // Wait for the chip to appear and DOM to stabilise after onBlur timeout
+    await waitFor(() => {
+      expect(screen.getByText('Nightlife')).toBeInTheDocument()
+    })
     const saveButtons = screen.getAllByRole('button', { name: /Save/i })
     await user.click(saveButtons[0])
     await waitFor(() => {

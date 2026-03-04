@@ -1,10 +1,18 @@
-import React from 'react'
+import React, { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-const Suggestions: React.FC = () => (
-  <div style={{padding:16}}>
-    <h2>Suggestions</h2>
-    <p>Suggested travel partners and trips.</p>
-  </div>
-)
+/**
+ * /suggestions now redirects to the Dashboard with the Recs tab active.
+ * All recommendation logic lives in Dashboard.tsx.
+ */
+const Suggestions: React.FC = () => {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    navigate('/dashboard', { state: { openTab: 'recs' }, replace: true })
+  }, [navigate])
+
+  return null
+}
 
 export default Suggestions
