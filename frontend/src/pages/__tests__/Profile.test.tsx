@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { BrowserRouter } from 'react-router-dom'
 
@@ -307,6 +307,8 @@ describe('Profile', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('Remove Skydiving Adventures')).toBeInTheDocument()
     })
+    // Flush the 120ms onBlur setTimeout so the dropdown closes before we click Remove
+    await act(async () => { await new Promise((r) => setTimeout(r, 150)) })
     await user.click(screen.getByLabelText('Remove Skydiving Adventures'))
     await waitFor(() => {
       expect(screen.queryByText('Skydiving Adventures')).not.toBeInTheDocument()
@@ -324,6 +326,8 @@ describe('Profile', () => {
     await waitFor(() => {
       expect(screen.getByText('Nightlife')).toBeInTheDocument()
     })
+    // Flush the 120ms onBlur setTimeout so the dropdown closes before we click Save
+    await act(async () => { await new Promise((r) => setTimeout(r, 150)) })
     const saveButtons = screen.getAllByRole('button', { name: /Save/i })
     await user.click(saveButtons[0])
     await waitFor(() => {

@@ -314,9 +314,25 @@ const Dashboard: React.FC = () => {
     const onStorage = (e: StorageEvent) => {
       if (e.key === LS_INTERESTS_KEY) loadInterests()
     }
+    // Re-check when the tab/window regains focus (covers same-browser cross-user flow)
+    const onFocus = () => loadInterests()
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') loadInterests()
+    }
     window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [loadInterests])
+
+  /* Re-load interests whenever we navigate back to this page */
+  useEffect(() => {
+    loadInterests()
+  }, [location.pathname, loadInterests])
 
   /* Auto-select Interest Received tab when there are received interests and no recs */
   useEffect(() => {
