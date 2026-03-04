@@ -135,6 +135,7 @@ const Profile: React.FC = () => {
           dateOfBirth: toDateInputValue(data.dateOfBirth),
           bio: data.bio ?? '',
           interests: Array.isArray(data.interests) ? data.interests : [],
+          profilePicture: data.profilePicture || '',
           memberSince: toDisplayDate(data.memberSince, prev.memberSince),
           tripsCount: typeof data.tripsCount === 'number' ? data.tripsCount : 0,
           destinationsVisited: typeof data.tripsCount === 'number' ? data.tripsCount : prev.destinationsVisited,
@@ -195,24 +196,104 @@ const Profile: React.FC = () => {
     setShowProfilePictureMenu(false)
   }
 
-  const handleRemoveProfilePicture = () => {
-    setProfile((prev) => ({ ...prev, profilePicture: '' }))
+  const handleRemoveProfilePicture = async () => {
     setShowProfilePictureMenu(false)
+    setRequestError('')
+    setSavingField('username') // Use as loading indicator
+
+    try {
+      // Send empty/null profile picture to backend
+      const response = await api.put('/users/me', { profilePicture: null })
+      
+      // Update local state
+      setProfile((prev) => ({ ...prev, profilePicture: '' }))
+
+      // Update localStorage
+      try {
+        const existingUser = localStorage.getItem('routed_user')
+        const parsedUser = existingUser ? JSON.parse(existingUser) : {}
+        localStorage.setItem(
+          'routed_user',
+          JSON.stringify({
+            ...parsedUser,
+            profilePicture: null,
+          })
+        )
+      } catch {
+        // ignore storage errors
+      }
+    } catch (err: any) {
+      const message = err?.response?.data?.detail || 'Failed to remove profile picture. Please try again.'
+      setRequestError(message)
+    } finally {
+      setSavingField(null)
+    }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        console.log('File loaded successfully')
-        setProfile((prev) => ({ ...prev, profilePicture: reader.result as string }))
+    if (!file) return
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/pjpeg']
+    if (!allowedTypes.includes(file.type)) {
+      setRequestError('Please select a JPEG/JPG image file')
+      return
+    }
+
+    // Validate file size (2MB max)
+    const maxSize = 2 * 1024 * 1024 // 2MB
+    if (file.size > maxSize) {
+      setRequestError('Profile picture must be 2MB or smaller')
+      return
+    }
+
+    setRequestError('')
+    setSavingField('username') // Use as loading indicator
+
+    try {
+      // Create FormData for file upload
+      const formData = new FormData()
+      formData.append('profile_picture', file)
+
+      // Upload to backend
+      const response = await api.put('/users/me/profile-picture', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      // Update local state with new profile picture
+      if (response.data.profilePicture) {
+        setProfile((prev) => ({ ...prev, profilePicture: response.data.profilePicture }))
       }
-      reader.onerror = () => {
-        console.error('Error reading file')
+
+      // Also update localStorage
+      try {
+        const existingUser = localStorage.getItem('routed_user')
+        const parsedUser = existingUser ? JSON.parse(existingUser) : {}
+        localStorage.setItem(
+          'routed_user',
+          JSON.stringify({
+            ...parsedUser,
+            profilePicture: response.data.profilePicture,
+          })
+        )
+      } catch {
+        // ignore storage errors
       }
-      reader.readAsDataURL(file)
-      console.log('Reading file:', file.name)
+
+      setShowProfilePictureMenu(false)
+    } catch (err: any) {
+      const message = err?.response?.data?.detail || 'Failed to upload profile picture. Please try again.'
+      setRequestError(message)
+    } finally {
+      setSavingField(null)
+    }
+
+    // Reset file input
+    if (e.target) {
+      e.target.value = ''
     }
   }
 
@@ -440,13 +521,20 @@ const Profile: React.FC = () => {
             <div className="absolute -bottom-16 left-8">
               <div className="relative group">
                 {/* Profile Picture */}
-                <div className="w-32 h-32 rounded-full border-4 border-white bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg flex items-center justify-center overflow-hidden">
+                <div className="w-32 h-32 rounded-full border-4 border-white bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg flex items-center justify-center overflow-hidden relative">
                   {profile.profilePicture ? (
                     <img src={profile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 text-white" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v1.2c0 .7.5 1.2 1.2 1.2h16.8c.7 0 1.2-.5 1.2-1.2v-1.2c0-3.2-6.4-4.8-9.6-4.8z"/>
                     </svg>
+                  )}
+                  
+                  {/* Loading Overlay */}
+                  {savingField === 'username' && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+                    </div>
                   )}
                 </div>
                 
@@ -508,14 +596,14 @@ const Profile: React.FC = () => {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,.jpg,.jpeg"
                   onChange={handleFileChange}
                   className="hidden"
                 />
                 <input
                   ref={cameraInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,.jpg,.jpeg"
                   capture="environment"
                   onChange={handleFileChange}
                   className="hidden"
