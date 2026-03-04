@@ -14,42 +14,43 @@ from backend.models.user import User
 from backend.models.trip import Trip, TripStatus
 from backend.models.location import Location
 from backend.api_models.match import MatchStatus as MatchStatusEnum
+from backend.routes.user.user import _hash_password
 
 
 @pytest.fixture
-def user_a(db: Session):
+def user_a(db_session: Session):
 	"""Create first test user."""
 	user = User(
 		username="test_user_a",
 		email="user_a@test.com",
 		first_name="Test",
 		last_name="UserA",
+		hashed_password=_hash_password("TestPass123!"),
 	)
-	user.set_password("TestPass123!")
-	db.add(user)
-	db.commit()
-	db.refresh(user)
+	db_session.add(user)
+	db_session.commit()
+	db_session.refresh(user)
 	return user
 
 
 @pytest.fixture
-def user_b(db: Session):
+def user_b(db_session: Session):
 	"""Create second test user."""
 	user = User(
 		username="test_user_b",
 		email="user_b@test.com",
 		first_name="Test",
 		last_name="UserB",
+		hashed_password=_hash_password("TestPass123!"),
 	)
-	user.set_password("TestPass123!")
-	db.add(user)
-	db.commit()
-	db.refresh(user)
+	db_session.add(user)
+	db_session.commit()
+	db_session.refresh(user)
 	return user
 
 
 @pytest.fixture
-def location(db: Session):
+def location(db_session: Session):
 	"""Create test location."""
 	from geoalchemy2.shape import from_shape
 	from shapely.geometry import Point
@@ -58,14 +59,14 @@ def location(db: Session):
 		description="The City of Light",
 		position=from_shape(Point(2.3522, 48.8566), srid=4326),
 	)
-	db.add(location)
-	db.commit()
-	db.refresh(location)
+	db_session.add(location)
+	db_session.commit()
+	db_session.refresh(location)
 	return location
 
 
 @pytest.fixture
-def trip_a(user_a: User, location: Location, db: Session):
+def trip_a(user_a: User, location: Location, db_session: Session):
 	"""Create first test trip."""
 	trip = Trip(
 		location_id=location.id,
@@ -77,14 +78,14 @@ def trip_a(user_a: User, location: Location, db: Session):
 		description="Spring trip to Paris",
 	)
 	trip.user = user_a
-	db.add(trip)
-	db.commit()
-	db.refresh(trip)
+	db_session.add(trip)
+	db_session.commit()
+	db_session.refresh(trip)
 	return trip
 
 
 @pytest.fixture
-def trip_b(user_b: User, location: Location, db: Session):
+def trip_b(user_b: User, location: Location, db_session: Session):
 	"""Create second test trip (overlapping with trip_a)."""
 	trip = Trip(
 		location_id=location.id,
@@ -96,14 +97,14 @@ def trip_b(user_b: User, location: Location, db: Session):
 		description="Spring vacation in Paris",
 	)
 	trip.user = user_b
-	db.add(trip)
-	db.commit()
-	db.refresh(trip)
+	db_session.add(trip)
+	db_session.commit()
+	db_session.refresh(trip)
 	return trip
 
 
 @pytest.fixture
-def match(trip_a: Trip, trip_b: Trip, location: Location, user_a: User, user_b: User, db: Session):
+def match(trip_a: Trip, trip_b: Trip, location: Location, user_a: User, user_b: User, db_session: Session):
 	"""Create test match between two trips."""
 	match = Match(
 		user_a_id=user_a.id,
@@ -116,9 +117,9 @@ def match(trip_a: Trip, trip_b: Trip, location: Location, user_a: User, user_b: 
 		status=MatchStatus.PENDING,
 		score=85.0,
 	)
-	db.add(match)
-	db.commit()
-	db.refresh(match)
+	db_session.add(match)
+	db_session.commit()
+	db_session.refresh(match)
 	return match
 
 
@@ -287,7 +288,7 @@ class TestGetMatchById:
 		)
 		assert response.status_code == 404
 	
-	def test_get_match_forbidden_for_unrelated_user(self, client, match, user_a, user_b, db):
+	def test_get_match_forbidden_for_unrelated_user(self, client, match, user_a, user_b, db_session):
 		"""Test that unauthorized users can't access a match."""
 		# Create a third user
 		user_c = User(
@@ -295,10 +296,10 @@ class TestGetMatchById:
 			email="user_c@test.com",
 			first_name="Test",
 			last_name="UserC",
+			hashed_password=_hash_password("TestPass123!"),
 		)
-		user_c.set_password("TestPass123!")
-		db.add(user_c)
-		db.commit()
+		db_session.add(user_c)
+		db_session.commit()
 		
 		token_c = self._get_token(client, "test_user_c", "TestPass123!")
 		response = client.get(
@@ -331,7 +332,7 @@ class TestUpdateMatchStatus:
 		data = response.json()
 		assert data["status"] == "user_a_accepted"
 	
-	def test_user_b_accepts_after_a(self, client, match, user_a, user_b, db):
+	def test_user_b_accepts_after_a(self, client, match, user_a, user_b, db_session):
 		"""Test user B accepting after user A."""
 		# First, user A accepts
 		token_a = self._get_token(client, "test_user_a", "TestPass123!")
@@ -343,7 +344,7 @@ class TestUpdateMatchStatus:
 		assert response_a.status_code == 200
 		
 		# Refresh match from DB
-		db.refresh(match)
+		db_session.refresh(match)
 		
 		# Then, user B accepts (should transition to BOTH_ACCEPTED)
 		token_b = self._get_token(client, "test_user_b", "TestPass123!")
@@ -403,7 +404,7 @@ class TestDeleteMatch:
 		)
 		assert response.status_code == 404
 	
-	def test_delete_match_forbidden_for_unrelated_user(self, client, match, user_a, user_b, db):
+	def test_delete_match_forbidden_for_unrelated_user(self, client, match, user_a, user_b, db_session):
 		"""Test that unauthorized users can't delete a match."""
 		# Create a third user
 		user_c = User(
@@ -411,10 +412,10 @@ class TestDeleteMatch:
 			email="user_c@test.com",
 			first_name="Test",
 			last_name="UserC",
+			hashed_password=_hash_password("TestPass123!"),
 		)
-		user_c.set_password("TestPass123!")
-		db.add(user_c)
-		db.commit()
+		db_session.add(user_c)
+		db_session.commit()
 		
 		token_c = self._get_token(client, "test_user_c", "TestPass123!")
 		response = client.delete(
