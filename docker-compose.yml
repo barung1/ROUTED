@@ -1,4 +1,5 @@
 version: '3.8'
+# Neo4j Knowledge Graph added — powers semantic interest matching (AtlasAI alignment)
 
 services:
   postgres:
@@ -19,6 +20,31 @@ services:
       timeout: 5s
       retries: 5
 
+  neo4j:
+    image: neo4j:5-community
+    container_name: routed-neo4j
+    env_file:
+      - env/.env
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-routedgraph}
+      - NEO4J_PLUGINS=[]
+      - NEO4J_server_memory_heap_initial__size=256m
+      - NEO4J_server_memory_heap_max__size=512m
+    ports:
+      - "7474:7474"   # Browser UI
+      - "7687:7687"   # Bolt protocol
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - routed-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:7474"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 30s
+
   backend:
     build:
       context: ./backend
@@ -31,6 +57,8 @@ services:
     command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       postgres:
+        condition: service_healthy
+      neo4j:
         condition: service_healthy
     volumes:
       - ./backend/logs:/app/logs
@@ -63,3 +91,4 @@ networks:
 
 volumes:
   postgres_data:
+  neo4j_data:

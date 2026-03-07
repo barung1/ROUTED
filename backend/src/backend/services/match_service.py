@@ -239,30 +239,91 @@ class MatchService:
 	def _calculate_match_score(trip_a: Trip, trip_b: Trip) -> float:
 		"""
 		Calculate a compatibility score for two matched trips.
-		
-		Current implementation: Basic score of 50.0
-		
-		EXTENSIBILITY: Implement sophisticated scoring algorithm here.
+
 		Score range: 0.0 (poor match) to 100.0 (perfect match)
-		
-		Future scoring factors:
-		1. Time overlap percentage (more overlap = higher score)
-		2. Interest similarity (Jaccard index of interests)
-		3. Budget compatibility (closer budgets = higher score)
-		4. Travel mode compatibility
-		5. User ratings/reputation
-		6. Social connections (friends of friends)
+
+		Weighted components:
+		  - 30% Overlap score  : how much of trip A's duration overlaps with B
+		  - 40% Interest score : graph-powered semantic similarity via Neo4j
+		                         (falls back to Jaccard on raw interest lists)
+		  - 30% Budget score   : how close the budgets are
+
+		Knowledge Graph integration:
+		  The interest score calls compute_graph_score() which traverses
+		  shared Interest nodes in Neo4j ([:HAS_INTEREST] relationships),
+		  adding a category hierarchy bonus via [:IS_A]->[:InterestCategory].
+		  This is the core AtlasAI-style graph reasoning step.
 		"""
-		base_score = 50.0
-		
-		# EXTENSIBILITY: Add scoring components here
-		# Example future implementation:
-		# overlap_score = _calculate_overlap_score(trip_a, trip_b)
-		# interest_score = _calculate_interest_score(trip_a, trip_b)
-		# budget_score = _calculate_budget_score(trip_a, trip_b)
-		# total_score = (overlap_score * 0.3) + (interest_score * 0.4) + (budget_score * 0.3)
-		
-		return base_score
+		overlap_score  = MatchService._calculate_overlap_score(trip_a, trip_b)
+		interest_score = MatchService._calculate_interest_score(trip_a, trip_b)
+		budget_score   = MatchService._calculate_budget_score(trip_a, trip_b)
+
+		total = (
+			overlap_score  * 0.30 +
+			interest_score * 0.40 +
+			budget_score   * 0.30
+		)
+		return round(min(max(total, 0.0), 100.0), 2)
+
+	@staticmethod
+	def _calculate_overlap_score(trip_a: Trip, trip_b: Trip) -> float:
+		"""
+		Score based on percentage of trip A's duration that overlaps with trip B.
+		More overlap = higher score. Full overlap = 100.
+		"""
+		match_start, match_end = MatchService._get_overlap_dates(trip_a, trip_b)
+		overlap_days = (match_end - match_start).days + 1
+		trip_a_days = (trip_a.end_date - trip_a.start_date).days + 1
+		if trip_a_days == 0:
+			return 50.0
+		ratio = overlap_days / trip_a_days
+		return min(ratio * 100.0, 100.0)
+
+	@staticmethod
+	def _calculate_interest_score(trip_a: Trip, trip_b: Trip) -> float:
+		"""
+		Semantic interest similarity score (0-100).
+
+		Primary: Neo4j Cypher traversal over shared Interest nodes.
+		Fallback: Jaccard index on raw interest lists (if Neo4j unavailable).
+
+		The Neo4j path counts shared [:HAS_INTEREST] edges, normalized
+		by the union — a graph-native Jaccard similarity that also accounts
+		for category-level overlap via the [:IS_A]->[:InterestCategory] hierarchy.
+		"""
+		# Try graph-powered scoring first
+		try:
+			from backend.graph import knowledge_graph
+			graph_score = knowledge_graph.compute_graph_score(trip_a.id, trip_b.id)
+			if graph_score is not None:
+				return graph_score
+		except Exception:
+			pass
+
+		# Fallback: Jaccard on raw interest lists
+		interests_a = set(trip_a.interests or [])
+		interests_b = set(trip_b.interests or [])
+		if not interests_a or not interests_b:
+			return 50.0
+		intersection = len(interests_a & interests_b)
+		union = len(interests_a | interests_b)
+		return (intersection / union) * 100.0 if union > 0 else 50.0
+
+	@staticmethod
+	def _calculate_budget_score(trip_a: Trip, trip_b: Trip) -> float:
+		"""
+		Score based on budget proximity. Identical budgets = 100.
+		No budget specified = neutral 50.
+		"""
+		if not trip_a.budget or not trip_b.budget:
+			return 50.0
+		budget_diff = abs(trip_a.budget - trip_b.budget)
+		max_budget = max(trip_a.budget, trip_b.budget)
+		if max_budget == 0:
+			return 100.0
+		similarity = 1.0 - (budget_diff / max_budget)
+		return max(similarity * 100.0, 0.0)
+
 	
 	# ==================== Helper Methods ====================
 	
