@@ -38,7 +38,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def _load_models() -> None:
 	"""Import models so SQLAlchemy registers them with Base metadata."""
-	from backend.models import location, tag, trip, user, match  # noqa: F401
+	from backend.models import location, tag, trip, user, match, interest  # noqa: F401
 
 
 def _ensure_postgres_dependencies() -> None:

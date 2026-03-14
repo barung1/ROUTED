@@ -19,7 +19,7 @@ interface TripItem {
   description: string | null
 }
 
-/* ── Interest record stored in localStorage ── */
+/* ── Interest record from the backend API ── */
 export interface InterestRecord {
   id: string
   fromUserId: string
@@ -30,8 +30,8 @@ export interface InterestRecord {
   tripLabel: string
   tripStartDate: string
   tripEndDate: string
-  timestamp: string
-  status: 'pending' | 'accepted' | 'declined'
+  status: string
+  createdAt: string
 }
 
 /* ── helpers ── */
@@ -56,7 +56,6 @@ const FALLBACK_USERNAME = 'traveler'
 const parseLocalDate = (d: string) => new Date(d + 'T00:00:00')
 
 const LS_SHORTLIST_KEY = 'routed_shortlisted'
-const LS_INTERESTS_KEY = 'routed_interests'
 
 /* ════════════════════════════════════════════════ */
 const Explore: React.FC = () => {
@@ -92,12 +91,6 @@ const Explore: React.FC = () => {
     return FALLBACK_USERNAME
   }
 
-  /* ── Helper: trip label ── */
-  const getTripLabel = (trip: TripItem): string => {
-    if (trip.fromPlace && trip.toPlace) return `${trip.fromPlace} → ${trip.toPlace}`
-    return trip.toPlace || trip.fromPlace || 'Trip'
-  }
-
   /* ── Load trips from API ── */
   useEffect(() => {
     const load = async () => {
@@ -119,17 +112,24 @@ const Explore: React.FC = () => {
     load()
   }, [])
 
-  /* ── Load shortlisted & interests from localStorage ── */
+  /* ── Load shortlisted from localStorage ── */
   useEffect(() => {
     const savedShortlist: TripItem[] = JSON.parse(localStorage.getItem(LS_SHORTLIST_KEY) || '[]')
     setShortlistedIds(new Set(savedShortlist.map((t) => t.id)))
-    // Load interests this user has sent
-    const currentUser = getCurrentUser()
-    if (currentUser) {
-      const allInterests: InterestRecord[] = JSON.parse(localStorage.getItem(LS_INTERESTS_KEY) || '[]')
-      const myPending = allInterests.filter((r) => r.fromUserId === currentUser.id && r.status === 'pending')
-      setInterestedTripIds(new Set(myPending.map((r) => r.tripId)))
+  }, [])
+
+  /* ── Load interested trip IDs from backend ── */
+  useEffect(() => {
+    const loadInterests = async () => {
+      if (!isLoggedIn()) return
+      try {
+        const res = await api.get('/interests/my-trip-ids')
+        setInterestedTripIds(new Set(res.data as string[]))
+      } catch {
+        setInterestedTripIds(new Set())
+      }
     }
+    loadInterests()
   }, [])
 
   /* ── Filter trips by search ── */
@@ -174,8 +174,8 @@ const Explore: React.FC = () => {
     setShortlistedIds(new Set(updated.map((t) => t.id)))
   }
 
-  /* ── Show interest on a trip ── */
-  const handleShowInterest = (trip: TripItem) => {
+  /* ── Show interest on a trip (via backend API) ── */
+  const handleShowInterest = async (trip: TripItem) => {
     const currentUser = getCurrentUser()
     if (!currentUser) {
       setShowAuthModal(true)
@@ -189,36 +189,22 @@ const Explore: React.FC = () => {
 
     setInterestSending(trip.id)
 
-    const allInterests: InterestRecord[] = JSON.parse(localStorage.getItem(LS_INTERESTS_KEY) || '[]')
-    const existing = allInterests.find(
-      (r) => r.fromUserId === currentUser.id && r.tripId === trip.id && r.status === 'pending'
-    )
+    try {
+      const res = await api.post('/interests/', { tripId: trip.id })
+      const data = res.data as InterestRecord
 
-    if (existing) {
-      // Toggle off — remove interest
-      const updated = allInterests.filter((r) => r.id !== existing.id)
-      localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(updated))
-      setInterestedTripIds((prev) => { const s = new Set(prev); s.delete(trip.id); return s })
-      setToast('Interest removed.')
-    } else {
-      // Add new interest
-      const record: InterestRecord = {
-        id: crypto.randomUUID(),
-        fromUserId: currentUser.id,
-        fromUsername: currentUser.username || 'unknown',
-        toUserId: trip.userId,
-        toUsername: trip.userName || getDisplayUsername(trip),
-        tripId: trip.id,
-        tripLabel: getTripLabel(trip),
-        tripStartDate: trip.startDate,
-        tripEndDate: trip.endDate,
-        timestamp: new Date().toISOString(),
-        status: 'pending',
+      if (data.status === 'removed') {
+        // Toggled off
+        setInterestedTripIds((prev) => { const s = new Set(prev); s.delete(trip.id); return s })
+        setToast('Interest removed.')
+      } else {
+        // Created
+        setInterestedTripIds((prev) => new Set(prev).add(trip.id))
+        setToast(`❤️ Interest sent to @${data.toUsername}!`)
       }
-      allInterests.push(record)
-      localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(allInterests))
-      setInterestedTripIds((prev) => new Set(prev).add(trip.id))
-      setToast(`❤️ Interest sent to @${record.toUsername}!`)
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || 'Failed to send interest.'
+      setToast(detail)
     }
 
     setTimeout(() => { setInterestSending(null); setToast(null) }, 3000)

@@ -1,7 +1,7 @@
 from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPAuthorizationCredentials
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import selectinload
 
@@ -86,6 +86,59 @@ def _get_optional_user_id(
 	return UUID(user_id)
 
 
+def _resolve_location_from_place(
+	to_place: str | None,
+	from_place: str | None,
+	db: Session,
+) -> UUID | None:
+	"""
+	Try to match a known Location from the toPlace or fromPlace text.
+
+	Strategy (in order):
+	  1. Case-insensitive exact match of location name against toPlace
+	  2. Case-insensitive substring match (location name appears in toPlace)
+	  3. Reverse substring (toPlace appears in location name)
+	  4. Repeat steps 1-3 for fromPlace as fallback
+
+	Returns the location UUID if found, otherwise None.
+	"""
+	candidates = db.execute(select(Location)).scalars().all()
+	if not candidates:
+		return None
+
+	for place_text in [to_place, from_place]:
+		if not place_text:
+			continue
+		text_lower = place_text.lower()
+
+		# Exact name match (case-insensitive)
+		for loc in candidates:
+			if loc.name.lower() == text_lower:
+				return loc.id
+
+		# Location name appears anywhere in the place text
+		for loc in candidates:
+			if loc.name.lower() in text_lower:
+				return loc.id
+
+		# Place text appears in the location name
+		# (e.g. "Liberty Island" → "Statue of Liberty" won't match above,
+		#  but individual significant words might)
+		place_words = [w for w in text_lower.replace(",", "").split() if len(w) > 3]
+		best_match = None
+		best_score = 0
+		for loc in candidates:
+			loc_lower = loc.name.lower()
+			score = sum(1 for w in place_words if w in loc_lower)
+			if score > best_score:
+				best_score = score
+				best_match = loc
+		if best_match and best_score > 0:
+			return best_match.id
+
+	return None
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=TripPublicModel)
 @limiter.limit("100/minute")
 def create_trip(
@@ -101,16 +154,18 @@ def create_trip(
 			status_code=status.HTTP_404_NOT_FOUND,
 			detail="User not found",
 		)
-	# If locationId is not provided, auto-assign the first available location
+	# Resolve the location for this trip
 	location_id = trip.locationId
 	if location_id is None:
-		first_location = db.execute(select(Location)).scalars().first()
-		if not first_location:
+		# Try to infer location from toPlace or fromPlace using fuzzy name matching
+		location_id = _resolve_location_from_place(trip.toPlace, trip.fromPlace, db)
+		if location_id is None:
 			raise HTTPException(
-				status_code=status.HTTP_404_NOT_FOUND,
-				detail="No locations available. Please seed the database.",
+				status_code=status.HTTP_400_BAD_REQUEST,
+				detail="Could not determine a location for this trip. "
+				       "Please provide a locationId or ensure the destination "
+				       "matches a known location.",
 			)
-		location_id = first_location.id
 	else:
 		location = db.execute(select(Location).where(Location.id == location_id)).scalars().first()
 		if not location:
@@ -135,20 +190,32 @@ def create_trip(
 	db.add(new_trip)
 	db.commit()
 	db.refresh(new_trip)
-
-	# Enqueue async match calculation; fall back to sync if Celery unavailable
+	
+	# Eagerly reload the trip with the user relationship for match calculation
+	new_trip = db.execute(
+		select(Trip).where(Trip.id == new_trip.id).options(selectinload(Trip.user))
+	).scalars().first()
+	
+	# Calculate and store matches for this new trip
 	try:
 		from backend.workers.tasks import calculate_matches_for_trip_id
 		calculate_matches_for_trip_id.delay(str(new_trip.id))
 	except Exception as e:
-		try:
-			matches_count = MatchService.calculate_matches_for_trip(new_trip, db)
-			if matches_count > 0:
-				db.commit()
-		except Exception as inner:
-			import logging
-			logging.getLogger(__name__).warning("Match calculation failed: %s", inner)
-
+		# Log error but don't fail the trip creation
+		print(f"Warning: Failed to calculate matches: {e}")
+	
+	# Sync trip to Neo4j knowledge graph in background
+	try:
+		from backend.graph.knowledge_graph import sync_trip
+		sync_trip(
+			trip_id=str(new_trip.id),
+			user_id=str(user.id),
+			location_id=str(location_id),
+			interests=trip.interests or [],
+		)
+	except Exception as e:
+		print(f"Warning: Failed to sync trip to Neo4j: {e}")
+	
 	return _to_public(new_trip)
 
 

@@ -55,8 +55,8 @@ def bootstrap_graph() -> None:
         for c in constraints:
             session.run(c)
 
-    from backend.loggers.logger import logger
-    logger.info("[KnowledgeGraph] Bootstrap complete — constraints and indexes ready.")
+    from backend.loggers.logger import get_logger
+    get_logger(__name__).info("[KnowledgeGraph] Bootstrap complete — constraints and indexes ready.")
 
 
 # ---------------------------------------------------------------------------

@@ -26,6 +26,7 @@ class TripBasic(BaseModel):
 	fromPlace: str | None = None
 	toPlace: str | None = None
 	budget: float | None = None
+	interests: list[str] = []
 
 
 class MatchExplanation(BaseModel):
