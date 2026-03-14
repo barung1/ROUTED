@@ -213,8 +213,8 @@ def train_embedder_from_graph() -> None:
         embedder = get_embedder()
         embedder.fit(trip_interest_lists)
 
-        from backend.loggers.logger import logger
-        logger.info(
+        from backend.loggers.logger import get_logger
+        get_logger(__name__).info(
             f"[GraphEmbedder] Trained on {len(trip_interest_lists)} trips, "
             f"vocab size: {len(embedder._vocab)}"
         )

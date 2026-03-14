@@ -1,7 +1,7 @@
 """
 Neo4j Driver Singleton for Routed Knowledge Graph.
 
-Reads NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD from env.
+Reads GRAPH_NEO4J_URI, GRAPH_NEO4J_USER, GRAPH_NEO4J_PASSWORD from env.
 Returns None gracefully if Neo4j is unreachable — the app continues
 functioning with Jaccard fallback scoring.
 """
@@ -31,21 +31,21 @@ def get_graph_driver():
     try:
         from neo4j import GraphDatabase  # type: ignore
 
-        uri = os.getenv("NEO4J_URI", "bolt://neo4j:7687")
-        user = os.getenv("NEO4J_USER", "neo4j")
-        password = os.getenv("NEO4J_PASSWORD", "routedgraph")
+        uri = os.getenv("GRAPH_NEO4J_URI", "bolt://neo4j:7687")
+        user = os.getenv("GRAPH_NEO4J_USER", "neo4j")
+        password = os.getenv("GRAPH_NEO4J_PASSWORD", "routedgraph")
 
         _driver = GraphDatabase.driver(uri, auth=(user, password))
 
         # Verify connectivity
         _driver.verify_connectivity()
 
-        from backend.loggers.logger import logger
-        logger.info(f"[KnowledgeGraph] Neo4j connected at {uri}")
+        from backend.loggers.logger import get_logger
+        get_logger(__name__).info(f"[KnowledgeGraph] Neo4j connected at {uri}")
 
     except Exception as exc:
-        from backend.loggers.logger import logger
-        logger.warning(f"[KnowledgeGraph] Neo4j unavailable — graph scoring disabled. ({exc})")
+        from backend.loggers.logger import get_logger
+        get_logger(__name__).warning(f"[KnowledgeGraph] Neo4j unavailable — graph scoring disabled. ({exc})")
         _driver = None
 
     return _driver

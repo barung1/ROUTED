@@ -95,6 +95,7 @@ def _to_match_detail(match: Match, current_user_id: UUID, db: Session) -> MatchD
 		matchEnd=match.match_end,
 		createdAt=match.created_at,
 		myUserId=current_user_id,
+		isUserA=(match.user_a_id == current_user_id),
 		myTrip=TripBasic(
 			id=my_trip.id,
 			locationId=my_trip.location_id,
@@ -103,6 +104,7 @@ def _to_match_detail(match: Match, current_user_id: UUID, db: Session) -> MatchD
 			fromPlace=my_trip.from_place,
 			toPlace=my_trip.to_place,
 			budget=my_trip.budget,
+			interests=my_trip.interests or [],
 		),
 		otherUser=UserBasic(
 			id=other_user.id,
@@ -119,6 +121,7 @@ def _to_match_detail(match: Match, current_user_id: UUID, db: Session) -> MatchD
 			fromPlace=other_trip.from_place,
 			toPlace=other_trip.to_place,
 			budget=other_trip.budget,
+			interests=other_trip.interests or [],
 		),
 		location=LocationBasic(
 			id=location.id,
@@ -338,7 +341,11 @@ def update_match_status(
 				status_code=status.HTTP_400_BAD_REQUEST,
 				detail=f"Cannot transition from {current_status.value} to {new_status.value}",
 			)
-		match.status = MatchStatus.USER_A_ACCEPTED
+		# Auto-promote to BOTH_ACCEPTED if the other user already accepted
+		if current_status == MatchStatus.USER_B_ACCEPTED:
+			match.status = MatchStatus.BOTH_ACCEPTED
+		else:
+			match.status = MatchStatus.USER_A_ACCEPTED
 	elif new_status == MatchStatus.USER_B_ACCEPTED:
 		# Only user_b can set this status
 		if is_user_a:
@@ -351,7 +358,11 @@ def update_match_status(
 				status_code=status.HTTP_400_BAD_REQUEST,
 				detail=f"Cannot transition from {current_status.value} to {new_status.value}",
 			)
-		match.status = MatchStatus.USER_B_ACCEPTED
+		# Auto-promote to BOTH_ACCEPTED if the other user already accepted
+		if current_status == MatchStatus.USER_A_ACCEPTED:
+			match.status = MatchStatus.BOTH_ACCEPTED
+		else:
+			match.status = MatchStatus.USER_B_ACCEPTED
 	elif new_status == MatchStatus.BOTH_ACCEPTED:
 		# Transition to BOTH_ACCEPTED only from appropriate states
 		if is_user_a:

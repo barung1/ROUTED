@@ -13,6 +13,7 @@ from backend.routes.user.user import router as user_router
 from backend.routes.trip.trip import router as trip_router
 from backend.routes.location import router as location_router
 from backend.routes.match.match import router as match_router
+from backend.routes.interest import router as interest_router
 from fastapi.middleware.cors import CORSMiddleware
 
 logger = get_logger(__name__, "app.log")
@@ -45,6 +46,7 @@ app.include_router(user_router, prefix="/users", tags=["Users"])
 app.include_router(trip_router, prefix="/trips", tags=["Trips"])
 app.include_router(match_router, prefix="/matches", tags=["Matches"], dependencies=[Depends(get_current_user_id)])
 app.include_router(location_router, prefix="/locations", tags=["Locations"],dependencies=[Depends(get_current_user_id)])
+app.include_router(interest_router, prefix="/interests", tags=["Interests"])
 
 
 # ---------------------------------------------------------------------------

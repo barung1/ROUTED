@@ -7,15 +7,19 @@ services:
     container_name: routed-postgres
     env_file:
       - env/.env
+    environment:
+      - POSTGRES_USER=routed_user
+      - POSTGRES_PASSWORD=routed_password
+      - POSTGRES_DB=routed
     ports:
-      - "5433:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - routed-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U routed_user"]
+      test: ["CMD-SHELL", "pg_isready -U routed_user -d routed"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -23,10 +27,8 @@ services:
   neo4j:
     image: neo4j:5-community
     container_name: routed-neo4j
-    env_file:
-      - env/.env
     environment:
-      - NEO4J_AUTH=${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-routedgraph}
+      - NEO4J_AUTH=neo4j/routedgraph
       - NEO4J_PLUGINS=[]
       - NEO4J_server_memory_heap_initial__size=256m
       - NEO4J_server_memory_heap_max__size=512m

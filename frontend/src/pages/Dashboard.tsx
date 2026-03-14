@@ -16,11 +16,13 @@ interface UserBasic {
 
 interface TripBasic {
   id: string
+  locationId: string
   startDate: string
   endDate: string
   fromPlace: string | null
   toPlace: string | null
   budget: number | null
+  interests: string[]
 }
 
 type MatchStatus =
@@ -42,6 +44,7 @@ interface MatchDetail {
   myTrip: TripBasic
   otherUser: UserBasic
   otherTrip: TripBasic
+  location: { id: string; name: string }
 }
 
 /** Message stored in localStorage for backend match notifications */
@@ -114,12 +117,11 @@ const Dashboard: React.FC = () => {
   const [recLoading, setRecLoading] = useState(true)
   const [recActionLoading, setRecActionLoading] = useState<string | null>(null)
 
-  /* ── Interest system (localStorage-based) ── */
-  const LS_INTERESTS_KEY = 'routed_interests'
+  /* ── Interest system (backend API-based) ── */
   const LS_MATCH_MSGS_KEY = 'routed_match_messages'
   const [interestsReceived, setInterestsReceived] = useState<InterestRecord[]>([])
   const [interestsGiven, setInterestsGiven] = useState<InterestRecord[]>([])
-  const [messages, setMessages] = useState<InterestRecord[]>([])
+  const [interestMessages, setInterestMessages] = useState<InterestRecord[]>([])
   const [matchMessages, setMatchMessages] = useState<MatchMessage[]>([])
   const [interestActionLoading, setInterestActionLoading] = useState<string | null>(null)
   const [rightTab, setRightTab] = useState<'recs' | 'received' | 'given' | 'messages'>('recs')
@@ -143,8 +145,14 @@ const Dashboard: React.FC = () => {
     try {
       const res = await api.get('/matches/me', { params: { limit: 100 } })
       const allMatches = res.data as MatchDetail[]
-      // Only show pending matches as recommendations
-      setRecommendations(allMatches.filter((m) => m.status === 'pending'))
+      // Show pending matches + matches where only the OTHER user has accepted (waiting for me)
+      setRecommendations(allMatches.filter((m) => {
+        if (m.status === 'pending') return true
+        // Show as recommendation if the other user accepted but I haven't yet
+        if (m.isUserA && m.status === 'user_b_accepted') return true
+        if (!m.isUserA && m.status === 'user_a_accepted') return true
+        return false
+      }))
 
       // Auto-generate messages for rejected & both_accepted matches
       const user = getCurrentUser()
@@ -165,7 +173,7 @@ const Dashboard: React.FC = () => {
               type: 'both_accepted',
               matchId: m.id,
               otherUsername: m.otherUser.username,
-              locationName: m.myTrip.toPlace || m.otherTrip.toPlace || 'Unknown',
+              locationName: m.location?.name || m.myTrip.toPlace || m.otherTrip.toPlace || 'Unknown',
               matchStart: m.matchStart,
               matchEnd: m.matchEnd,
               myTripLabel: tripLabel(m.myTrip),
@@ -179,7 +187,7 @@ const Dashboard: React.FC = () => {
               type: 'rejected',
               matchId: m.id,
               otherUsername: m.otherUser.username,
-              locationName: m.myTrip.toPlace || m.otherTrip.toPlace || 'Unknown',
+              locationName: m.location?.name || m.myTrip.toPlace || m.otherTrip.toPlace || 'Unknown',
               matchStart: m.matchStart,
               matchEnd: m.matchEnd,
               myTripLabel: tripLabel(m.myTrip),
@@ -230,7 +238,7 @@ const Dashboard: React.FC = () => {
         type: isBothAccepted ? 'both_accepted' : 'rejected',
         matchId: match.id,
         otherUsername: match.otherUser.username,
-        locationName: match.myTrip.toPlace || match.otherTrip.toPlace || 'Unknown',
+        locationName: match.location?.name || match.myTrip.toPlace || match.otherTrip.toPlace || 'Unknown',
         matchStart: match.matchStart,
         matchEnd: match.matchEnd,
         myTripLabel: tripLabel(match.myTrip),
@@ -274,7 +282,7 @@ const Dashboard: React.FC = () => {
         type: 'rejected',
         matchId: match.id,
         otherUsername: match.otherUser.username,
-        locationName: match.myTrip.toPlace || match.otherTrip.toPlace || 'Unknown',
+        locationName: match.location?.name || match.myTrip.toPlace || match.otherTrip.toPlace || 'Unknown',
         matchStart: match.matchStart,
         matchEnd: match.matchEnd,
         myTripLabel: tripLabel(match.myTrip),
@@ -294,39 +302,25 @@ const Dashboard: React.FC = () => {
     }
   }
 
-  /* ── Load interests from localStorage ── */
-  const loadInterests = useCallback(() => {
-    const user = getCurrentUser()
-    if (!user) return
-    const all: InterestRecord[] = JSON.parse(localStorage.getItem(LS_INTERESTS_KEY) || '[]')
-    setInterestsReceived(all.filter((r) => r.toUserId === user.id && r.status === 'pending'))
-    setInterestsGiven(all.filter((r) => r.fromUserId === user.id))
-    // Messages: accepted interests (both parties see it) + declined interests (sender sees it)
-    setMessages([
-      ...all.filter((r) => r.status === 'accepted' && (r.fromUserId === user.id || r.toUserId === user.id)),
-      ...all.filter((r) => r.status === 'declined' && r.fromUserId === user.id),
-    ])
+  /* ── Load interests from backend API ── */
+  const loadInterests = useCallback(async () => {
+    if (!localStorage.getItem('routed_token')) return
+    try {
+      const [receivedRes, givenRes, messagesRes] = await Promise.all([
+        api.get('/interests/received'),
+        api.get('/interests/given'),
+        api.get('/interests/messages'),
+      ])
+      setInterestsReceived(receivedRes.data as InterestRecord[])
+      setInterestsGiven(givenRes.data as InterestRecord[])
+      setInterestMessages(messagesRes.data as InterestRecord[])
+    } catch {
+      // Silently fail — interests table may not exist yet
+    }
   }, [])
 
   useEffect(() => {
     loadInterests()
-    // Re-check when localStorage changes (other tabs)
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === LS_INTERESTS_KEY) loadInterests()
-    }
-    // Re-check when the tab/window regains focus (covers same-browser cross-user flow)
-    const onFocus = () => loadInterests()
-    const onVisibility = () => {
-      if (document.visibilityState === 'visible') loadInterests()
-    }
-    window.addEventListener('storage', onStorage)
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => {
-      window.removeEventListener('storage', onStorage)
-      window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onVisibility)
-    }
   }, [loadInterests])
 
   /* Re-load interests whenever we navigate back to this page */
@@ -339,34 +333,43 @@ const Dashboard: React.FC = () => {
     if (interestsReceived.length > 0 && recommendations.length === 0) setRightTab('received')
   }, [interestsReceived.length, recommendations.length])
 
-  /* ── Accept an interest ── */
-  const handleAcceptInterest = (record: InterestRecord) => {
+  /* ── Accept an interest (via backend API) ── */
+  const handleAcceptInterest = async (record: InterestRecord) => {
     setInterestActionLoading(record.id)
-    const all: InterestRecord[] = JSON.parse(localStorage.getItem(LS_INTERESTS_KEY) || '[]')
-    const updated = all.map((r) => r.id === record.id ? { ...r, status: 'accepted' as const } : r)
-    localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(updated))
-    loadInterests()
-    setInterestActionLoading(null)
-    // Switch to Messages tab so the user sees the success notification
-    setRightTab('messages')
+    try {
+      await api.put(`/interests/${record.id}`, { status: 'accepted' })
+      showToast(`✅ Interest from @${record.fromUsername} accepted!`, 'success')
+      setRightTab('messages')
+      await loadInterests()
+    } catch {
+      showToast('Failed to accept interest. Please try again.', 'error')
+    } finally {
+      setInterestActionLoading(null)
+    }
   }
 
-  /* ── Decline an interest ── */
-  const handleDeclineInterest = (record: InterestRecord) => {
+  /* ── Decline an interest (via backend API) ── */
+  const handleDeclineInterest = async (record: InterestRecord) => {
     setInterestActionLoading(record.id)
-    const all: InterestRecord[] = JSON.parse(localStorage.getItem(LS_INTERESTS_KEY) || '[]')
-    const updated = all.map((r) => r.id === record.id ? { ...r, status: 'declined' as const } : r)
-    localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(updated))
-    loadInterests()
-    setInterestActionLoading(null)
+    try {
+      await api.put(`/interests/${record.id}`, { status: 'declined' })
+      showToast('Interest declined.', 'info')
+      await loadInterests()
+    } catch {
+      showToast('Failed to decline interest. Please try again.', 'error')
+    } finally {
+      setInterestActionLoading(null)
+    }
   }
 
-  /* ── Dismiss a declined message ── */
-  const handleDismissMessage = (record: InterestRecord) => {
-    const all: InterestRecord[] = JSON.parse(localStorage.getItem(LS_INTERESTS_KEY) || '[]')
-    const updated = all.filter((r) => r.id !== record.id)
-    localStorage.setItem(LS_INTERESTS_KEY, JSON.stringify(updated))
-    loadInterests()
+  /* ── Dismiss an interest message (via backend API — delete it) ── */
+  const handleDismissMessage = async (record: InterestRecord) => {
+    try {
+      await api.delete(`/interests/${record.id}`)
+    } catch {
+      // Ignore — might not be the sender
+    }
+    await loadInterests()
   }
 
   /* ── Dismiss a match message ── */
@@ -378,7 +381,7 @@ const Dashboard: React.FC = () => {
   }
 
   /* Total messages count (interest + match) */
-  const totalMessageCount = messages.length + matchMessages.length
+  const totalMessageCount = interestMessages.length + matchMessages.length
 
   /* auto-open trip form when navigated from Trips page or Explore page */
   useEffect(() => {
@@ -796,35 +799,71 @@ const Dashboard: React.FC = () => {
                   <div className="space-y-3 flex-1 overflow-y-auto max-h-[26rem]">
                     {recommendations.slice(0, 10).map((match) => {
                       const isActing = recActionLoading === match.id
+                      const sharedInterests = (match.myTrip.interests || []).filter((i) =>
+                        (match.otherTrip.interests || []).includes(i)
+                      )
+                      const budgetDiff = match.myTrip.budget != null && match.otherTrip.budget != null
+                        ? Math.abs(match.myTrip.budget - match.otherTrip.budget)
+                        : null
                       return (
                         <motion.div
                           key={match.id}
                           whileHover={{ scale: 1.01, x: 4 }}
-                          className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all group"
+                          className="p-4 rounded-2xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all group"
                         >
-                          <span className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-sm text-white font-bold shadow-sm shrink-0">
-                            {match.otherUser.username.charAt(0).toUpperCase()}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-900 text-sm truncate">@{match.otherUser.username}</p>
-                            <p className="text-[11px] text-gray-500 truncate">
-                              📍 {match.myTrip.toPlace || match.otherTrip.toPlace || 'Unknown'} · {fmtDate(match.matchStart)} – {fmtDate(match.matchEnd)}
-                            </p>
-                            <p className="text-[10px] text-amber-600 font-semibold mt-0.5">⭐ {match.score.toFixed(0)}% match</p>
+                          {/* Row 1: User + score + actions */}
+                          <div className="flex items-center gap-3">
+                            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-sm text-white font-bold shadow-sm shrink-0">
+                              {match.otherUser.username.charAt(0).toUpperCase()}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-900 text-sm truncate">@{match.otherUser.username}</p>
+                              <p className="text-[11px] text-gray-500 truncate">
+                                📍 {match.location?.name || match.myTrip.toPlace || 'Unknown'} · {fmtDate(match.matchStart)} – {fmtDate(match.matchEnd)}
+                              </p>
+                            </div>
+                            <p className="text-xs text-amber-600 font-bold shrink-0">⭐ {match.score.toFixed(0)}%</p>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                disabled={isActing}
+                                onClick={(e) => { e.stopPropagation(); handleRecAccept(match) }}
+                                className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200 transition disabled:opacity-50"
+                                title="Accept — I'm interested in traveling together"
+                              >{isActing ? '…' : '✓ Accept'}</button>
+                              <button
+                                disabled={isActing}
+                                onClick={(e) => { e.stopPropagation(); handleRecDecline(match) }}
+                                className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-500 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition disabled:opacity-50"
+                                title="Decline"
+                              >{isActing ? '…' : '✗'}</button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              disabled={isActing}
-                              onClick={(e) => { e.stopPropagation(); handleRecAccept(match) }}
-                              className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200 transition disabled:opacity-50"
-                              title="Accept — moves to Matched Trips"
-                            >{isActing ? '…' : '✓'}</button>
-                            <button
-                              disabled={isActing}
-                              onClick={(e) => { e.stopPropagation(); handleRecDecline(match) }}
-                              className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-gray-100 text-gray-500 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition disabled:opacity-50"
-                              title="Decline"
-                            >{isActing ? '…' : '✗'}</button>
+                          {/* Row 2: Match details — why you matched */}
+                          <div className="mt-2 ml-[52px] space-y-1">
+                            <p className="text-[11px] text-gray-500">
+                              <span className="font-medium text-gray-600">Your trip:</span> {match.myTrip.fromPlace || '?'} → {match.myTrip.toPlace || '?'}
+                              {match.myTrip.budget != null && <span className="ml-1 text-gray-400">(${match.myTrip.budget})</span>}
+                            </p>
+                            <p className="text-[11px] text-gray-500">
+                              <span className="font-medium text-gray-600">Their trip:</span> {match.otherTrip.fromPlace || '?'} → {match.otherTrip.toPlace || '?'}
+                              {match.otherTrip.budget != null && <span className="ml-1 text-gray-400">(${match.otherTrip.budget})</span>}
+                            </p>
+                            {sharedInterests.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                <span className="text-[10px] text-gray-400 mr-1">Shared:</span>
+                                {sharedInterests.map((tag) => (
+                                  <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-medium">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {budgetDiff != null && budgetDiff === 0 && (
+                              <p className="text-[10px] text-emerald-600 font-medium">💰 Same budget!</p>
+                            )}
+                            {budgetDiff != null && budgetDiff > 0 && (
+                              <p className="text-[10px] text-gray-400">💰 Budget difference: ${budgetDiff.toFixed(0)}</p>
+                            )}
                           </div>
                         </motion.div>
                       )
@@ -1016,7 +1055,7 @@ const Dashboard: React.FC = () => {
                     })}
 
                     {/* ── Interest-based messages ── */}
-                    {messages.map((record) => {
+                    {interestMessages.map((record) => {
                       const user = getCurrentUser()
                       const isAccepted = record.status === 'accepted'
                       const otherName = record.fromUserId === user?.id ? record.toUsername : record.fromUsername

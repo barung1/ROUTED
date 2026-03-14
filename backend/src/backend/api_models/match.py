@@ -26,6 +26,7 @@ class TripBasic(BaseModel):
 	fromPlace: str | None = None
 	toPlace: str | None = None
 	budget: float | None = None
+	interests: list[str] = []
 
 
 class LocationBasic(BaseModel):
@@ -66,6 +67,7 @@ class MatchDetailModel(BaseModel):
 	
 	# Current user's perspective
 	myUserId: UUID
+	isUserA: bool
 	myTrip: TripBasic
 	
 	# Other user's information
