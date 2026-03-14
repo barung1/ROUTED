@@ -2,20 +2,38 @@ version: '3.8'
 # Neo4j Knowledge Graph added — powers semantic interest matching (AtlasAI alignment)
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: routed-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - routed-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   postgres:
     image: postgres:15-alpine
     container_name: routed-postgres
     env_file:
       - env/.env
+    environment:
+      POSTGRES_USER: routed_user
+      POSTGRES_PASSWORD: routed_password
+      POSTGRES_DB: routed
     ports:
-      - "5433:5432"
+      - "5434:5432"   # use 5434 on host instead of 5433
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - routed-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U routed_user"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -52,6 +70,8 @@ services:
     container_name: routed-backend
     env_file:
       - env/.env
+    environment:
+      - PYTHONPATH=/app/src
     ports:
       - "8000:8000"
     command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
@@ -59,6 +79,32 @@ services:
       postgres:
         condition: service_healthy
       neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./backend/src:/app/src
+    networks:
+      - routed-network
+    restart: unless-stopped
+
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: routed-celery-worker
+    env_file:
+      - env/.env
+    environment:
+      - PYTHONPATH=/app/src
+    command: celery -A backend.workers.celery_app worker -l info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./backend/logs:/app/logs

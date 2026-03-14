@@ -1,11 +1,12 @@
 from uuid import UUID
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import Session, selectinload
 
 from backend.api_models.match import (
 	MatchDetailModel,
+	MatchExplanation,
 	MatchPublicModel,
 	MatchUpdateModel,
 	UserBasic,
@@ -18,6 +19,7 @@ from backend.models.match import Match, MatchStatus
 from backend.models.location import Location
 from backend.models.trip import Trip
 from backend.models.user import User
+from backend.config.limiter import limiter
 
 router = APIRouter()
 
@@ -86,7 +88,10 @@ def _to_match_detail(match: Match, current_user_id: UUID, db: Session) -> MatchD
 			status_code=status.HTTP_404_NOT_FOUND,
 			detail="Location not found",
 		)
-	
+
+	# Compute explanation (shared interests, overlap, budget)
+	explanation = _build_match_explanation(match, my_trip, other_trip)
+
 	return MatchDetailModel(
 		id=match.id,
 		status=match.status,
@@ -95,6 +100,7 @@ def _to_match_detail(match: Match, current_user_id: UUID, db: Session) -> MatchD
 		matchEnd=match.match_end,
 		createdAt=match.created_at,
 		myUserId=current_user_id,
+		isUserA=match.user_a_id == current_user_id,
 		myTrip=TripBasic(
 			id=my_trip.id,
 			locationId=my_trip.location_id,
@@ -124,6 +130,32 @@ def _to_match_detail(match: Match, current_user_id: UUID, db: Session) -> MatchD
 			id=location.id,
 			name=location.name,
 		),
+		explanation=explanation,
+	)
+
+
+def _build_match_explanation(match: Match, my_trip: Trip, other_trip: Trip) -> MatchExplanation:
+	"""Build MatchExplanation from match and trip data."""
+	overlap_days = (match.match_end - match.match_start).days + 1
+	budget_sim = 0.5
+	if my_trip.budget is not None and other_trip.budget is not None:
+		diff = abs(my_trip.budget - other_trip.budget)
+		mx = max(my_trip.budget, other_trip.budget)
+		if mx > 0:
+			budget_sim = max(0.0, 1.0 - (diff / mx))
+
+	shared_interests: list[str] = []
+	try:
+		from backend.graph import knowledge_graph
+		exp = knowledge_graph.get_match_explanation(match.trip_a_id, match.trip_b_id)
+		shared_interests = exp.get("shared_interests") or []
+	except Exception:
+		pass
+
+	return MatchExplanation(
+		shared_interests=shared_interests,
+		overlap_days=overlap_days,
+		budget_similarity=round(budget_sim, 2),
 	)
 
 
@@ -205,7 +237,9 @@ def list_all_matches(
 
 
 @router.get("/me", response_model=list[MatchDetailModel])
+@limiter.limit("100/minute")
 def get_my_matches(
+	request: Request,
 	user_id: UUID = Depends(get_current_user_id),
 	match_status: Optional[str] = Query(None, alias="status"),
 	skip: int = Query(0, ge=0),
@@ -263,7 +297,9 @@ def get_my_matches(
 
 
 @router.get("/{match_id}", response_model=MatchDetailModel)
+@limiter.limit("100/minute")
 def get_match_by_id(
+	request: Request,
 	match_id: UUID,
 	user_id: UUID = Depends(get_current_user_id),
 	db: Session = Depends(get_db_session),
@@ -290,7 +326,9 @@ def get_match_by_id(
 
 
 @router.put("/{match_id}", response_model=MatchDetailModel)
+@limiter.limit("100/minute")
 def update_match_status(
+	request: Request,
 	match_id: UUID,
 	update: MatchUpdateModel,
 	user_id: UUID = Depends(get_current_user_id),

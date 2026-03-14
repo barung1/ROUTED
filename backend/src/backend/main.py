@@ -14,6 +14,11 @@ from backend.routes.trip.trip import router as trip_router
 from backend.routes.location import router as location_router
 from backend.routes.match.match import router as match_router
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Request
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
+from backend.config.limiter import limiter
 
 logger = get_logger(__name__, "app.log")
 
@@ -33,6 +38,9 @@ origins = [
 	"http://127.0.0.1:5173",
 ]
 
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
 app.add_middleware(
 	CORSMiddleware,
 	allow_origins=origins,
@@ -40,6 +48,27 @@ app.add_middleware(
 	allow_methods=["*"],
 	allow_headers=["*"],
 )
+
+
+# Prometheus request duration middleware
+@app.middleware("http")
+async def prometheus_request_duration(request: Request, call_next):
+	from time import perf_counter
+	from backend.metrics import api_request_duration
+	start = perf_counter()
+	response = await call_next(request)
+	duration = perf_counter() - start
+	path = request.url.path or "unknown"
+	method = request.method or "GET"
+	# Normalize path to avoid high cardinality (e.g. /matches/123 -> /matches/{id})
+	if "/matches/" in path and path != "/matches/":
+		path = "/matches/{id}"
+	elif "/trips/" in path and path != "/trips/" and path != "/trips":
+		path = "/trips/{id}"
+	elif "/users/" in path and path != "/users/" and path != "/users":
+		path = "/users/{id}"
+	api_request_duration.labels(method=method, path=path).observe(duration)
+	return response
 
 app.include_router(user_router, prefix="/users", tags=["Users"])
 app.include_router(trip_router, prefix="/trips", tags=["Trips"])
@@ -144,7 +173,9 @@ def graph_explain_match(
 	),
 	status_code=status.HTTP_200_OK,
 )
+@limiter.limit("5/minute")
 def recompute_embeddings(
+	request: Request,
 	current_user_id: UUID = Depends(get_current_user_id),
 ):
 	"""Trigger re-training of the graph interest embeddings."""
@@ -159,6 +190,26 @@ def recompute_embeddings(
 		}
 	except Exception as exc:
 		raise HTTPException(status_code=503, detail=f"Embedding recompute failed: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Prometheus metrics
+# ---------------------------------------------------------------------------
+
+@app.get(
+	"/metrics",
+	tags=["Observability"],
+	summary="Prometheus metrics",
+	description="Prometheus-compatible metrics endpoint for scraping. No auth.",
+)
+def metrics():
+	"""Expose Prometheus metrics for scraping."""
+	from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+	from fastapi.responses import Response
+	return Response(
+		content=generate_latest(),
+		media_type=CONTENT_TYPE_LATEST,
+	)
 
 
 # ---------------------------------------------------------------------------

@@ -30,6 +30,12 @@ type MatchStatus =
   | 'both_accepted'
   | 'rejected'
 
+interface MatchExplanation {
+  shared_interests: string[]
+  overlap_days: number
+  budget_similarity: number
+}
+
 interface MatchDetail {
   id: string
   status: MatchStatus
@@ -42,6 +48,7 @@ interface MatchDetail {
   myTrip: TripBasic
   otherUser: UserBasic
   otherTrip: TripBasic
+  explanation?: MatchExplanation | null
 }
 
 /** Message stored in localStorage for backend match notifications */
@@ -811,6 +818,14 @@ const Dashboard: React.FC = () => {
                               📍 {match.myTrip.toPlace || match.otherTrip.toPlace || 'Unknown'} · {fmtDate(match.matchStart)} – {fmtDate(match.matchEnd)}
                             </p>
                             <p className="text-[10px] text-amber-600 font-semibold mt-0.5">⭐ {match.score.toFixed(0)}% match</p>
+                            {match.explanation && (
+                              <p className="text-[9px] text-gray-400 mt-0.5 truncate">
+                                {match.explanation.shared_interests?.length > 0 && `${match.explanation.shared_interests.length} shared interests`}
+                                {match.explanation.shared_interests?.length > 0 && match.explanation.overlap_days > 0 && ' · '}
+                                {match.explanation.overlap_days > 0 && `${match.explanation.overlap_days}d overlap`}
+                                {match.explanation.budget_similarity >= 0.7 && ' · similar budgets'}
+                              </p>
+                            )}
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <button

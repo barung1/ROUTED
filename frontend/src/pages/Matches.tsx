@@ -29,6 +29,12 @@ type MatchStatus =
   | 'both_accepted'
   | 'rejected'
 
+interface MatchExplanation {
+  shared_interests: string[]
+  overlap_days: number
+  budget_similarity: number
+}
+
 interface MatchDetail {
   id: string
   status: MatchStatus
@@ -41,6 +47,7 @@ interface MatchDetail {
   myTrip: TripBasic
   otherUser: UserBasic
   otherTrip: TripBasic
+  explanation?: MatchExplanation | null
 }
 
 /* ── Helpers ── */
@@ -337,12 +344,30 @@ const Matches: React.FC = () => {
                     </div>
 
                     {/* Score */}
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-2">
                       <span className="text-base">⭐</span>
                       <span className={`text-sm font-bold ${scoreColor(match.score)}`}>
                         {match.score.toFixed(0)}% compatibility
                       </span>
                     </div>
+
+                    {/* Match explanation */}
+                    {match.explanation && (
+                      <div className="text-xs text-gray-600 mb-3 space-y-0.5">
+                        <span className="font-medium text-gray-700">Reasons: </span>
+                        {match.explanation.shared_interests?.length > 0 && (
+                          <span>{match.explanation.shared_interests.length} shared interests ({match.explanation.shared_interests.slice(0, 3).join(', ')}{match.explanation.shared_interests.length > 3 ? '…' : ''})</span>
+                        )}
+                        {match.explanation.shared_interests?.length > 0 && match.explanation.overlap_days > 0 && ' · '}
+                        {match.explanation.overlap_days > 0 && (
+                          <span>{match.explanation.overlap_days} day overlap</span>
+                        )}
+                        {((match.explanation.shared_interests?.length ?? 0) > 0 || match.explanation.overlap_days > 0) && match.explanation.budget_similarity >= 0.7 && ' · '}
+                        {match.explanation.budget_similarity >= 0.7 && (
+                          <span>similar budgets</span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Trip route chips */}
                     <div className="flex flex-wrap gap-2 mb-3">
@@ -454,6 +479,22 @@ const Matches: React.FC = () => {
                       {selectedMatch.score.toFixed(1)}% compatibility score
                     </span>
                   </div>
+                  {selectedMatch.explanation && (
+                    <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-700">
+                      <span className="font-semibold text-gray-800">Why this match: </span>
+                      {selectedMatch.explanation.shared_interests?.length > 0 && (
+                        <span>{selectedMatch.explanation.shared_interests.length} shared interests: {selectedMatch.explanation.shared_interests.join(', ')}</span>
+                      )}
+                      {selectedMatch.explanation.shared_interests?.length > 0 && selectedMatch.explanation.overlap_days > 0 && ' · '}
+                      {selectedMatch.explanation.overlap_days > 0 && (
+                        <span>{selectedMatch.explanation.overlap_days} day overlap</span>
+                      )}
+                      {((selectedMatch.explanation.shared_interests?.length ?? 0) > 0 || selectedMatch.explanation.overlap_days > 0) && ' · '}
+                      <span>
+                        {selectedMatch.explanation.budget_similarity >= 0.8 ? 'very similar budgets' : selectedMatch.explanation.budget_similarity >= 0.5 ? 'similar budgets' : 'different budgets'}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Trip comparison */}

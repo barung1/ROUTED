@@ -28,6 +28,13 @@ class TripBasic(BaseModel):
 	budget: float | None = None
 
 
+class MatchExplanation(BaseModel):
+	"""Explainable match reasons for product/ML transparency."""
+	shared_interests: list[str] = []
+	overlap_days: int = 0
+	budget_similarity: float = 0.0
+
+
 class LocationBasic(BaseModel):
 	"""Basic location information for match responses."""
 	model_config = ConfigDict(from_attributes=True)
@@ -66,6 +73,7 @@ class MatchDetailModel(BaseModel):
 	
 	# Current user's perspective
 	myUserId: UUID
+	isUserA: bool
 	myTrip: TripBasic
 	
 	# Other user's information
@@ -74,6 +82,9 @@ class MatchDetailModel(BaseModel):
 	
 	# Shared location
 	location: LocationBasic
+
+	# Optional explainable reasons (computed on-demand)
+	explanation: MatchExplanation | None = None
 
 
 class MatchUpdateModel(BaseModel):

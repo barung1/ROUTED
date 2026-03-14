@@ -284,23 +284,41 @@ class MatchService:
 		"""
 		Semantic interest similarity score (0-100).
 
-		Primary: Neo4j Cypher traversal over shared Interest nodes.
-		Fallback: Jaccard index on raw interest lists (if Neo4j unavailable).
+		Primary: Neo4j Cypher traversal over shared Interest nodes (with Redis cache).
+		Secondary: Embedding-based score from GraphEmbedder (Node2Vec-style).
+		Fallback: Jaccard index on raw interest lists.
 
-		The Neo4j path counts shared [:HAS_INTEREST] edges, normalized
-		by the union — a graph-native Jaccard similarity that also accounts
-		for category-level overlap via the [:IS_A]->[:InterestCategory] hierarchy.
+		Failure handling: If Neo4j is unavailable, uses embeddings or Jaccard.
 		"""
-		# Try graph-powered scoring first
+		import logging
+		logger = logging.getLogger(__name__)
+
+		# Primary: Neo4j graph score (skip if driver unavailable)
+		from backend.graph.graph_client import get_graph_driver
+		if get_graph_driver() is not None:
+			try:
+				from backend.graph import knowledge_graph
+				graph_score = knowledge_graph.compute_graph_score_cached(trip_a.id, trip_b.id)
+				if graph_score is not None:
+					return graph_score
+			except Exception as e:
+				logger.warning("Neo4j graph scoring failed, trying embeddings fallback: %s", e)
+
+		# Secondary: Embedding-based scoring (if trained)
 		try:
-			from backend.graph import knowledge_graph
-			graph_score = knowledge_graph.compute_graph_score(trip_a.id, trip_b.id)
-			if graph_score is not None:
-				return graph_score
+			from backend.graph import graph_embedder
+			embedder = graph_embedder.get_embedder()
+			if embedder._vocab:
+				emb_score = embedder.score_interest_lists(
+					trip_a.interests or [],
+					trip_b.interests or [],
+				)
+				return emb_score
 		except Exception:
 			pass
 
 		# Fallback: Jaccard on raw interest lists
+		logger.debug("Using Jaccard interest fallback (Neo4j unavailable or embeddings untrained)")
 		interests_a = set(trip_a.interests or [])
 		interests_b = set(trip_b.interests or [])
 		if not interests_a or not interests_b:

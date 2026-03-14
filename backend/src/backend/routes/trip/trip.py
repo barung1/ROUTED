@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -12,6 +12,7 @@ from backend.models.location import Location
 from backend.models.trip import Trip, TripStatus
 from backend.models.user import User
 from backend.services.match_service import MatchService
+from backend.config.limiter import limiter
 
 router = APIRouter()
 
@@ -86,7 +87,9 @@ def _get_optional_user_id(
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=TripPublicModel)
+@limiter.limit("100/minute")
 def create_trip(
+	request: Request,
 	trip: TripCreateModel,
 	user_id: UUID = Depends(get_current_user_id),
 	db: Session = Depends(get_db_session),
@@ -132,16 +135,20 @@ def create_trip(
 	db.add(new_trip)
 	db.commit()
 	db.refresh(new_trip)
-	
-	# Calculate and store matches for this new trip
+
+	# Enqueue async match calculation; fall back to sync if Celery unavailable
 	try:
-		matches_count = MatchService.calculate_matches_for_trip(new_trip, db)
-		if matches_count > 0:
-			db.commit()
+		from backend.workers.tasks import calculate_matches_for_trip_id
+		calculate_matches_for_trip_id.delay(str(new_trip.id))
 	except Exception as e:
-		# Log error but don't fail the trip creation
-		print(f"Warning: Failed to calculate matches: {e}")
-	
+		try:
+			matches_count = MatchService.calculate_matches_for_trip(new_trip, db)
+			if matches_count > 0:
+				db.commit()
+		except Exception as inner:
+			import logging
+			logging.getLogger(__name__).warning("Match calculation failed: %s", inner)
+
 	return _to_public(new_trip)
 
 
@@ -202,7 +209,9 @@ def get_trip_by_id(
 
 
 @router.put("/{trip_id}", response_model=TripPublicModel)
+@limiter.limit("100/minute")
 def update_trip(
+	request: Request,
 	trip_id: UUID,
 	update: TripUpdateModel,
 	user_id: UUID = Depends(get_current_user_id),
@@ -260,16 +269,21 @@ def update_trip(
 
 	db.commit()
 	db.refresh(trip)
-	
+
 	# Recalculate matches after trip update (only if status is PLANNED)
 	if trip.status == TripStatus.PLANNED:
 		try:
-			matches_count = MatchService.calculate_matches_for_trip(trip, db)
-			if matches_count > 0:
-				db.commit()
-		except Exception as e:
-			print(f"Warning: Failed to recalculate matches: {e}")
-	
+			from backend.workers.tasks import calculate_matches_for_trip_id
+			calculate_matches_for_trip_id.delay(str(trip.id))
+		except Exception:
+			try:
+				matches_count = MatchService.calculate_matches_for_trip(trip, db)
+				if matches_count > 0:
+					db.commit()
+			except Exception as inner:
+				import logging
+				logging.getLogger(__name__).warning("Match recalculation failed: %s", inner)
+
 	return _to_public(trip)
 
 

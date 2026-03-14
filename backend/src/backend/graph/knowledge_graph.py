@@ -273,6 +273,48 @@ def compute_graph_score(trip_a_id: str | UUID, trip_b_id: str | UUID) -> Optiona
 
 
 # ---------------------------------------------------------------------------
+# Cached scoring — Redis-backed cache for graph scores (1h TTL)
+# ---------------------------------------------------------------------------
+
+_GRAPH_SCORE_CACHE_TTL = 3600  # 1 hour
+
+
+def compute_graph_score_cached(trip_a_id: str | UUID, trip_b_id: str | UUID) -> Optional[float]:
+    """
+    Like compute_graph_score but with Redis caching.
+    Canonical key: score:{min_id}:{max_id}. On cache miss, compute and store.
+    """
+    tid_a = str(trip_a_id)
+    tid_b = str(trip_b_id)
+    key_min, key_max = (tid_a, tid_b) if tid_a <= tid_b else (tid_b, tid_a)
+    cache_key = f"graph_score:{key_min}:{key_max}"
+
+    redis_client = None
+    try:
+        from backend.config.redis import get_redis_client
+        redis_client = get_redis_client()
+    except Exception:
+        pass
+
+    if redis_client:
+        try:
+            cached = redis_client.get(cache_key)
+            if cached is not None:
+                return float(cached)
+        except Exception:
+            pass
+
+    score = compute_graph_score(trip_a_id, trip_b_id)
+    if score is not None and redis_client:
+        try:
+            redis_client.setex(cache_key, _GRAPH_SCORE_CACHE_TTL, str(score))
+        except Exception:
+            pass
+
+    return score
+
+
+# ---------------------------------------------------------------------------
 # Explain — called from GET /graph/explain/{match_id}
 # ---------------------------------------------------------------------------
 
