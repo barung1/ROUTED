@@ -51,6 +51,10 @@ class Trip(Base):
 	user_name: Mapped[str | None] = mapped_column(String, nullable=True)
 	from_place: Mapped[str | None] = mapped_column(String, nullable=True)
 	to_place: Mapped[str | None] = mapped_column(String, nullable=True)
+	from_lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+	from_lng: Mapped[float | None] = mapped_column(Float, nullable=True)
+	to_lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+	to_lng: Mapped[float | None] = mapped_column(Float, nullable=True)
 	mode_of_travel: Mapped[TravelMode | None] = mapped_column(
 		Enum(TravelMode, name="travel_mode"),
 		nullable=True,

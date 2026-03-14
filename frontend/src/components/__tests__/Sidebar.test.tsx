@@ -37,6 +37,6 @@ describe('Sidebar', () => {
   it('highlights the active route', () => {
     renderWithRouter(<Sidebar />, '/dashboard')
     const dashboardLink = screen.getByText(/Dashboard/).closest('a')
-    expect(dashboardLink?.className).toContain('indigo')
+    expect(dashboardLink?.className).toContain('brand')
   })
 })

@@ -9,15 +9,12 @@ import Dashboard from './pages/Dashboard'
 import Profile from './pages/Profile'
 import Suggestions from './pages/Suggestions'
 import Matches from './pages/Matches'
-import Sidebar from './components/Sidebar'
 import './App.css'
 
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <div style={{display:'flex'}}>
-        <Sidebar />
-        <main style={{flex:1}}>
+      <main>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
@@ -29,8 +26,7 @@ const App: React.FC = () => {
             <Route path="/suggestions" element={<Suggestions />} />
             <Route path="/matches" element={<Matches />} />
           </Routes>
-        </main>
-      </div>
+      </main>
     </BrowserRouter>
   )
 }

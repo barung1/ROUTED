@@ -14,6 +14,7 @@ from backend.routes.trip.trip import router as trip_router
 from backend.routes.location import router as location_router
 from backend.routes.match.match import router as match_router
 from backend.routes.interest import router as interest_router
+from backend.routes.places import router as places_router
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Request
 from slowapi import _rate_limit_exceeded_handler
@@ -76,6 +77,7 @@ app.include_router(trip_router, prefix="/trips", tags=["Trips"])
 app.include_router(match_router, prefix="/matches", tags=["Matches"], dependencies=[Depends(get_current_user_id)])
 app.include_router(location_router, prefix="/locations", tags=["Locations"],dependencies=[Depends(get_current_user_id)])
 app.include_router(interest_router, prefix="/interests", tags=["Interests"])
+app.include_router(places_router, prefix="/places", tags=["Places"])
 
 
 # ---------------------------------------------------------------------------

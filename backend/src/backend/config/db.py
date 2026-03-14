@@ -140,6 +140,10 @@ def _ensure_trip_columns() -> None:
 		if "user_name" not in trip_columns:
 			connection.execute(text(f"ALTER TABLE {db_schema}.trips ADD COLUMN IF NOT EXISTS user_name VARCHAR"))
 			missing_columns.append("user_name")
+		for col in ("from_lat", "from_lng", "to_lat", "to_lng"):
+			if col not in trip_columns:
+				connection.execute(text(f"ALTER TABLE {db_schema}.trips ADD COLUMN IF NOT EXISTS {col} DOUBLE PRECISION"))
+				missing_columns.append(col)
 
 		connection.execute(
 			text(

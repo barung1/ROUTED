@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../api/client'
 
@@ -69,6 +69,12 @@ const Explore: React.FC = () => {
   const [interestSending, setInterestSending] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q) setSearchQuery(q)
+  }, [searchParams])
 
   const isLoggedIn = () => !!localStorage.getItem('routed_token')
 
@@ -212,7 +218,7 @@ const Explore: React.FC = () => {
 
   /* ═══════════════ RENDER ═══════════════ */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 relative">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-brand-50/50 relative">
 
       {/* ── Toast notification ── */}
       <AnimatePresence>
@@ -221,7 +227,7 @@ const Explore: React.FC = () => {
             initial={{ opacity: 0, y: -30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -30 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold bg-indigo-600 text-white"
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold bg-brand-500 text-white"
           >
             {toast}
           </motion.div>
@@ -229,20 +235,20 @@ const Explore: React.FC = () => {
       </AnimatePresence>
 
       {/* ── Hero header ── */}
-      <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 pt-8 pb-20 px-4 md:px-8 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-brand-500 to-brand-600 pt-8 pb-20 px-4 md:px-8 relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-12 -left-12 w-44 h-44 bg-white/10 rounded-full blur-2xl" />
 
         <div className="max-w-6xl mx-auto relative text-center">
           <motion.div {...fadeUp(0)}>
             {isLoggedIn() && (
-              <Link to="/dashboard" className="inline-flex items-center gap-2 text-indigo-200 hover:text-white text-sm font-medium mb-4 transition">
+              <Link to="/dashboard" className="inline-flex items-center gap-2 text-brand-100 hover:text-white text-sm font-medium mb-4 transition">
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                 Back to Dashboard
               </Link>
             )}
             <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">🌍 Explore Trips</h1>
-            <p className="mt-2 text-indigo-200 text-sm md:text-base max-w-lg mx-auto">
+            <p className="mt-2 text-brand-100 text-sm md:text-base max-w-lg mx-auto">
               Discover trips from travelers around the world. Get inspired and plan your next adventure.
             </p>
           </motion.div>
@@ -275,14 +281,14 @@ const Explore: React.FC = () => {
       {/* ── Stats bar ── */}
       <div className="max-w-6xl mx-auto px-4 md:px-8 mt-4">
         <motion.div {...fadeUp(0.15)} className="flex flex-wrap items-center gap-4">
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 bg-violet-50 px-3 py-1.5 rounded-lg">
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-600 bg-brand-50 px-3 py-1.5 rounded-lg">
             ✈️ {trips.length} trip{trips.length !== 1 ? 's' : ''} to explore
           </span>
           <span className="flex-1" />
           {isLoggedIn() && (
             <Link
               to="/trips"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 transition"
             >
               View My Trips →
             </Link>
@@ -294,7 +300,7 @@ const Explore: React.FC = () => {
       <main className="max-w-6xl mx-auto px-4 md:px-8 py-6 pb-28">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <motion.div {...fadeUp(0.1)} className="text-center py-20">
@@ -326,14 +332,14 @@ const Explore: React.FC = () => {
                   key={trip.id}
                   {...fadeUp(0.04 * Math.min(i, 8))}
                   whileHover={{ y: -4 }}
-                  className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-gray-200/60 hover:border-indigo-300 overflow-hidden transition-all group"
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-gray-200/60 hover:border-brand-300 overflow-hidden transition-all group"
                 >
-                  <div className="h-2 bg-gradient-to-r from-violet-400 to-fuchsia-400" />
+                  <div className="h-2 bg-gradient-to-r from-brand-400 to-brand-500" />
 
                   <div className="p-5">
                     {/* Creator username badge */}
                     <div className="flex items-center gap-2 mb-3">
-                      <span className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-[10px] text-white font-bold shadow-sm">
+                      <span className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-[10px] text-white font-bold shadow-sm">
                         {displayName.charAt(0).toUpperCase()}
                       </span>
                       <span className="text-xs font-semibold text-gray-600">@{displayName}</span>
@@ -341,7 +347,7 @@ const Explore: React.FC = () => {
 
                     {/* Header row */}
                     <div className="flex items-start gap-3 mb-3">
-                      <span className="w-12 h-12 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center text-2xl shrink-0 shadow-sm group-hover:shadow-md transition">
+                      <span className="w-12 h-12 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center text-2xl shrink-0 shadow-sm group-hover:shadow-md transition">
                         {tripEmojis[i % tripEmojis.length]}
                       </span>
                       <div className="min-w-0 flex-1">
@@ -377,7 +383,7 @@ const Explore: React.FC = () => {
                     {trip.interests.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mb-3">
                         {trip.interests.slice(0, 4).map((tag) => (
-                          <span key={tag} className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{tag}</span>
+                          <span key={tag} className="text-[10px] font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">{tag}</span>
                         ))}
                         {trip.interests.length > 4 && (
                           <span className="text-[10px] text-gray-400">+{trip.interests.length - 4} more</span>
@@ -389,7 +395,7 @@ const Explore: React.FC = () => {
                       {/* View More */}
                       <button
                         onClick={() => requireAuth(() => setSelectedTrip(trip))}
-                        className="text-xs text-gray-500 hover:text-indigo-600 font-semibold transition"
+                        className="text-xs text-gray-500 hover:text-brand-600 font-semibold transition"
                       >
                         View More
                       </button>
@@ -399,7 +405,7 @@ const Explore: React.FC = () => {
                           <span className="text-gray-200">|</span>
                           <button
                             onClick={() => planSimilarTrip(trip)}
-                            className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition"
+                            className="text-xs text-brand-600 hover:text-brand-700 font-semibold transition"
                           >
                             Plan a similar trip →
                           </button>
@@ -463,7 +469,7 @@ const Explore: React.FC = () => {
               className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full z-10 overflow-hidden"
             >
               {/* Gradient header */}
-              <div className="h-2 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500" />
+              <div className="h-2 bg-gradient-to-r from-brand-500 to-brand-600" />
 
               {/* Close button */}
               <button
@@ -476,7 +482,7 @@ const Explore: React.FC = () => {
               <div className="p-7">
                 {/* Trip title */}
                 <div className="flex items-center gap-3 mb-5">
-                  <span className="w-14 h-14 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center text-3xl shadow-sm">
+                  <span className="w-14 h-14 rounded-2xl bg-brand-100 text-brand-600 flex items-center justify-center text-3xl shadow-sm">
                     {tripEmojis[trips.indexOf(selectedTrip) % tripEmojis.length]}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -488,7 +494,7 @@ const Explore: React.FC = () => {
                     <div className="flex items-center gap-2 mt-1">
                       {/* Creator badge */}
                       <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
-                        <span className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-[9px] text-white font-bold">
+                        <span className="w-5 h-5 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-[9px] text-white font-bold">
                           {getDisplayUsername(selectedTrip).charAt(0).toUpperCase()}
                         </span>
                         @{getDisplayUsername(selectedTrip)}
@@ -549,7 +555,7 @@ const Explore: React.FC = () => {
                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Interests</h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedTrip.interests.map((tag) => (
-                        <span key={tag} className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{tag}</span>
+                        <span key={tag} className="text-xs font-semibold text-brand-600 bg-brand-50 px-3 py-1 rounded-full">{tag}</span>
                       ))}
                     </div>
                   </div>
@@ -597,7 +603,7 @@ const Explore: React.FC = () => {
                         setSelectedTrip(null)
                         planSimilarTrip(trip)
                       }}
-                      className="flex-1 px-5 py-2.5 text-sm rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold shadow-md hover:shadow-lg transition-all"
+                      className="flex-1 px-5 py-2.5 text-sm rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 text-white font-semibold shadow-md hover:shadow-lg transition-all"
                     >
                       ✈️ Plan a Similar Trip
                     </motion.button>
@@ -649,13 +655,13 @@ const Explore: React.FC = () => {
               <div className="flex flex-col gap-3">
                 <Link
                   to="/login"
-                  className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-md hover:shadow-lg transition-all"
+                  className="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-md hover:shadow-lg transition-all"
                 >
                   ✨ Sign In
                 </Link>
                 <Link
                   to="/signup"
-                  className="w-full inline-flex items-center justify-center gap-2 bg-white border-2 border-indigo-200 text-indigo-600 px-6 py-3 rounded-2xl font-semibold hover:bg-indigo-50 hover:border-indigo-300 transition-all"
+                  className="w-full inline-flex items-center justify-center gap-2 bg-white border-2 border-brand-200 text-brand-600 px-6 py-3 rounded-2xl font-semibold hover:bg-brand-50 hover:border-brand-300 transition-all"
                 >
                   🚀 Create Account
                 </Link>

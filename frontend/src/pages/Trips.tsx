@@ -48,7 +48,7 @@ const LS_SHORTLIST_KEY = 'routed_shortlisted'
 
 const statusColors: Record<string, string> = {
   planned: 'bg-blue-100 text-blue-700 border-blue-200',
-  completed: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  completed: 'bg-brand-100 text-brand-700 border-brand-200',
   cancelled: 'bg-red-100 text-red-700 border-red-200',
 }
 
@@ -257,10 +257,10 @@ const Trips: React.FC = () => {
 
   /* ═══════════════ RENDER ═══════════════ */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-brand-50/50">
 
       {/* ── Page Header ── */}
-      <div className="bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 pt-8 pb-16 px-4 md:px-8 relative overflow-hidden">
+      <div className="bg-gradient-to-r from-brand-500 to-brand-600 pt-8 pb-16 px-4 md:px-8 relative overflow-hidden">
         <div className="absolute -top-16 -right-16 w-56 h-56 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-12 -left-12 w-44 h-44 bg-white/10 rounded-full blur-2xl" />
 
@@ -268,18 +268,18 @@ const Trips: React.FC = () => {
           <motion.div {...fadeUp(0)}>
             <div className="flex items-start justify-between">
               <div className="flex-1 text-center">
-                <Link to="/dashboard" className="inline-flex items-center gap-2 text-indigo-200 hover:text-white text-sm font-medium mb-4 transition">
+                <Link to="/dashboard" className="inline-flex items-center gap-2 text-brand-100 hover:text-white text-sm font-medium mb-4 transition">
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
                   Back to Dashboard
                 </Link>
                 <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Trips</h1>
-                <p className="mt-2 text-indigo-200 text-sm md:text-base max-w-lg mx-auto">Manage your trips and view shortlisted trips.</p>
+                <p className="mt-2 text-brand-100 text-sm md:text-base max-w-lg mx-auto">Manage your trips and view shortlisted trips.</p>
               </div>
 
               {/* Explore Trips button — same position as Landing & Dashboard */}
               <Link
                 to="/explore"
-                className="bg-white text-indigo-600 px-5 py-2.5 rounded-full shadow-lg hover:bg-indigo-50 hover:shadow-xl transition-all text-sm font-semibold tracking-wide shrink-0 mt-2"
+                className="bg-white text-brand-600 px-5 py-2.5 rounded-full shadow-lg hover:bg-brand-50 hover:shadow-xl transition-all text-sm font-semibold tracking-wide shrink-0 mt-2"
               >
                 🌍 Explore Trips
               </Link>
@@ -297,7 +297,7 @@ const Trips: React.FC = () => {
               onClick={() => setActiveTab(tab.key)}
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === tab.key
-                  ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
+                  ? 'bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
@@ -328,7 +328,7 @@ const Trips: React.FC = () => {
             >
               {loadingTrips ? (
                 <div className="flex items-center justify-center py-20">
-                  <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
                 </div>
               ) : myTrips.length === 0 ? (
                 <motion.div {...fadeUp(0.1)} className="text-center py-20">
@@ -339,13 +339,13 @@ const Trips: React.FC = () => {
                     <Link
                       to="/dashboard"
                       state={{ openTripForm: true }}
-                      className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-md hover:shadow-lg transition-all"
+                      className="inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-6 py-3 rounded-2xl font-semibold shadow-md hover:shadow-lg transition-all"
                     >
                       <span className="text-lg">+</span> Create a Trip
                     </Link>
                     <Link
                       to="/explore"
-                      className="inline-flex items-center gap-2 bg-white border border-indigo-200 text-indigo-600 px-6 py-3 rounded-2xl font-semibold shadow-md hover:shadow-lg hover:bg-indigo-50 transition-all"
+                      className="inline-flex items-center gap-2 bg-white border border-brand-200 text-brand-600 px-6 py-3 rounded-2xl font-semibold shadow-md hover:shadow-lg hover:bg-brand-50 transition-all"
                     >
                       🌍 Explore
                     </Link>
@@ -360,13 +360,13 @@ const Trips: React.FC = () => {
                       layout
                       className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-md border border-gray-200/60 overflow-hidden hover:shadow-lg transition-shadow"
                     >
-                      <div className="h-2 bg-gradient-to-r from-indigo-500 to-violet-500" />
+                      <div className="h-2 bg-gradient-to-r from-brand-500 to-brand-600" />
 
                       <div className="p-5">
                         {/* Username badge */}
                         {trip.username && (
                           <div className="flex items-center gap-2 mb-3">
-                            <span className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-[10px] text-white font-bold shadow-sm">
+                            <span className="w-6 h-6 rounded-full bg-gradient-to-br from-brand-400 to-brand-500 flex items-center justify-center text-[10px] text-white font-bold shadow-sm">
                               {trip.username.charAt(0).toUpperCase()}
                             </span>
                             <span className="text-xs font-semibold text-gray-600">@{trip.username}</span>
@@ -384,7 +384,7 @@ const Trips: React.FC = () => {
                                   type="text"
                                   value={editForm.fromPlace}
                                   onChange={(e) => setEditForm({ ...editForm, fromPlace: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none transition"
+                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-brand-500/30 focus:border-transparent outline-none transition"
                                   placeholder="From place"
                                 />
                               </div>
@@ -394,7 +394,7 @@ const Trips: React.FC = () => {
                                   type="text"
                                   value={editForm.toPlace}
                                   onChange={(e) => setEditForm({ ...editForm, toPlace: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none transition"
+                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-brand-500/30 focus:border-transparent outline-none transition"
                                   placeholder="To place"
                                 />
                               </div>
@@ -408,7 +408,7 @@ const Trips: React.FC = () => {
                                   type="date"
                                   value={editForm.startDate}
                                   onChange={(e) => setEditForm({ ...editForm, startDate: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none transition"
+                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-brand-500/30 focus:border-transparent outline-none transition"
                                 />
                               </div>
                               <div>
@@ -417,7 +417,7 @@ const Trips: React.FC = () => {
                                   type="date"
                                   value={editForm.endDate}
                                   onChange={(e) => setEditForm({ ...editForm, endDate: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none transition"
+                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-brand-500/30 focus:border-transparent outline-none transition"
                                 />
                               </div>
                             </div>
@@ -429,7 +429,7 @@ const Trips: React.FC = () => {
                                 <select
                                   value={editForm.travelMode}
                                   onChange={(e) => setEditForm({ ...editForm, travelMode: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none transition"
+                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-brand-500/30 focus:border-transparent outline-none transition"
                                 >
                                   <option value="">Select</option>
                                   {TRAVEL_MODES.map((m) => (
@@ -443,7 +443,7 @@ const Trips: React.FC = () => {
                                   type="number"
                                   value={editForm.budget}
                                   onChange={(e) => setEditForm({ ...editForm, budget: e.target.value })}
-                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none transition"
+                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-brand-500/30 focus:border-transparent outline-none transition"
                                   placeholder="0"
                                 />
                               </div>
@@ -452,7 +452,7 @@ const Trips: React.FC = () => {
                                 <select
                                   value={editForm.status}
                                   onChange={(e) => setEditForm({ ...editForm, status: e.target.value as EditForm['status'] })}
-                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none transition"
+                                  className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-brand-500/30 focus:border-transparent outline-none transition"
                                 >
                                   {STATUS_OPTIONS.map((s) => (
                                     <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
@@ -468,7 +468,7 @@ const Trips: React.FC = () => {
                                 type="text"
                                 value={editForm.interests}
                                 onChange={(e) => setEditForm({ ...editForm, interests: e.target.value })}
-                                className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none transition"
+                                className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-brand-500/30 focus:border-transparent outline-none transition"
                                 placeholder="e.g. hiking, food, culture"
                               />
                             </div>
@@ -480,7 +480,7 @@ const Trips: React.FC = () => {
                                 value={editForm.description}
                                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                                 rows={2}
-                                className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none transition resize-none"
+                                className="w-full px-3 py-2 text-sm rounded-xl border border-gray-200 bg-white/80 focus:ring-2 focus:ring-brand-500/30 focus:border-transparent outline-none transition resize-none"
                                 placeholder="Trip description…"
                               />
                             </div>
@@ -490,7 +490,7 @@ const Trips: React.FC = () => {
                               <button
                                 onClick={saveEdit}
                                 disabled={editSaving}
-                                className="flex-1 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-2 rounded-xl shadow hover:shadow-md transition disabled:opacity-50"
+                                className="flex-1 text-sm font-semibold text-white bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 rounded-xl shadow hover:shadow-md transition disabled:opacity-50"
                               >
                                 {editSaving ? 'Saving…' : '✅ Save'}
                               </button>
@@ -507,7 +507,7 @@ const Trips: React.FC = () => {
                           <>
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex items-center gap-3 min-w-0">
-                                <span className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg shrink-0">
+                                <span className="w-10 h-10 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center text-lg shrink-0">
                                   {trip.travelMode === 'Flight' ? '✈️' : trip.travelMode === 'Train' ? '🚆' : trip.travelMode === 'Car' ? '🚗' : trip.travelMode === 'Ship' ? '🚢' : '🧳'}
                                 </span>
                                 <div className="min-w-0">
@@ -544,7 +544,7 @@ const Trips: React.FC = () => {
                               <>
                                 <button
                                   onClick={() => setExpandedTrip(expandedTrip === trip.id ? null : trip.id)}
-                                  className="text-xs text-indigo-600 font-semibold hover:text-indigo-800 transition mb-2"
+                                  className="text-xs text-brand-600 font-semibold hover:text-brand-700 transition mb-2"
                                 >
                                   {expandedTrip === trip.id ? 'Hide details ▲' : 'Show details ▼'}
                                 </button>
@@ -566,7 +566,7 @@ const Trips: React.FC = () => {
                             <div className="flex items-center gap-2 mt-4 pt-3 border-t border-gray-100">
                               <button
                                 onClick={() => startEditing(trip)}
-                                className="text-xs text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition font-medium"
+                                className="text-xs text-brand-600 hover:text-brand-700 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition font-medium"
                               >
                                 ✏️ Edit
                               </button>
@@ -705,7 +705,7 @@ const Trips: React.FC = () => {
                                   description: trip.description || '',
                                 },
                               }}
-                              className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold transition"
+                              className="text-xs text-brand-600 hover:text-brand-700 font-semibold transition"
                             >
                               Plan a similar trip →
                             </Link>

@@ -3,6 +3,8 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import logo from '../assets/logo.png'
 import api from '../api/client'
+import { PlaceAutocomplete, type PlaceSuggestion } from '../components/PlaceAutocomplete'
+import { TripMap } from '../components/TripMap'
 import type { InterestRecord } from './Explore'
 
 /* ── types ── */
@@ -31,12 +33,6 @@ type MatchStatus =
   | 'user_b_accepted'
   | 'both_accepted'
   | 'rejected'
-
-interface MatchExplanation {
-  shared_interests: string[]
-  overlap_days: number
-  budget_similarity: number
-}
 
 interface MatchDetail {
   id: string
@@ -83,6 +79,10 @@ const TRAVEL_MODES = [
 const emptyForm = {
   fromPlace: '',
   toPlace: '',
+  fromLat: null as number | null,
+  fromLng: null as number | null,
+  toLat: null as number | null,
+  toLng: null as number | null,
   startDate: '',
   endDate: '',
   travelMode: '',
@@ -399,13 +399,17 @@ const Dashboard: React.FC = () => {
       if (state.prefillTrip) {
         const p = state.prefillTrip
         setTripForm({
+          ...emptyForm,
           fromPlace: p.fromPlace || '',
           toPlace: p.toPlace || '',
+          fromLat: p.fromLat ?? null,
+          fromLng: p.fromLng ?? null,
+          toLat: p.toLat ?? null,
+          toLng: p.toLng ?? null,
           startDate: '',
           endDate: '',
           travelMode: p.travelMode || '',
           budget: p.budget || '',
-          currency: 'USD',
           interests: p.interests || '',
           description: p.description || '',
         })
@@ -445,7 +449,26 @@ const Dashboard: React.FC = () => {
   }
 
   const handleTripField = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setTripForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+    setTripForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleFromPlaceSelect = (place: PlaceSuggestion | null) => {
+    setTripForm((prev) => ({
+      ...prev,
+      fromPlace: place?.display_name ?? '',
+      fromLat: place?.lat ?? null,
+      fromLng: place?.lon ?? null,
+    }))
+  }
+
+  const handleToPlaceSelect = (place: PlaceSuggestion | null) => {
+    setTripForm((prev) => ({
+      ...prev,
+      toPlace: place?.display_name ?? '',
+      toLat: place?.lat ?? null,
+      toLng: place?.lon ?? null,
+    }))
   }
 
   const handleCreateTrip = async () => {
@@ -460,6 +483,10 @@ const Dashboard: React.FC = () => {
         endDate: tripForm.endDate,
         fromPlace: tripForm.fromPlace || null,
         toPlace: tripForm.toPlace || null,
+        fromLat: tripForm.fromLat ?? null,
+        fromLng: tripForm.fromLng ?? null,
+        toLat: tripForm.toLat ?? null,
+        toLng: tripForm.toLng ?? null,
         modeOfTravel: tripForm.travelMode ? tripForm.travelMode.toLowerCase() : null,
         budget: tripForm.budget ? parseFloat(tripForm.budget) : null,
         interests: tripForm.interests ? tripForm.interests.split(',').map((s) => s.trim()).filter(Boolean) : [],
@@ -490,7 +517,7 @@ const Dashboard: React.FC = () => {
 
   /* ── render ── */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-brand-50/50">
 
       {/* ── Toast notification ── */}
       <AnimatePresence>
@@ -501,10 +528,10 @@ const Dashboard: React.FC = () => {
             exit={{ opacity: 0, y: -30 }}
             className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold ${
               toast.type === 'success'
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-brand-500 text-white'
                 : toast.type === 'error'
                 ? 'bg-red-600 text-white'
-                : 'bg-indigo-600 text-white'
+                : 'bg-brand-500 text-white'
             }`}
           >
             {toast.message}
@@ -524,7 +551,7 @@ const Dashboard: React.FC = () => {
           <div className="flex items-center gap-3">
             <Link
               to="/explore"
-              className="bg-indigo-600 text-white px-5 py-2 rounded-full shadow-md hover:bg-indigo-700 hover:shadow-lg transition-all text-sm font-semibold tracking-wide"
+              className="bg-brand-500 text-white px-5 py-2 rounded-full shadow-md hover:opacity-90 hover:shadow-lg transition-all text-sm font-semibold tracking-wide"
             >
               Explore Trips
             </Link>
@@ -533,7 +560,7 @@ const Dashboard: React.FC = () => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setProfileOpen((p) => !p)}
-                className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-white flex items-center justify-center shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all focus:outline-none focus:ring-2 focus:ring-brand-500/30"
                 aria-label="Profile menu"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
@@ -550,11 +577,11 @@ const Dashboard: React.FC = () => {
                     transition={{ duration: 0.15 }}
                     className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50"
                   >
-                    <Link to="/profile" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1">
+                    <Link to="/profile" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition rounded-lg mx-1">
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                       Your Profile
                     </Link>
-                    <Link to="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1">
+                    <Link to="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition rounded-lg mx-1">
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                       Settings
                     </Link>
@@ -576,10 +603,10 @@ const Dashboard: React.FC = () => {
 
         {/* ── Greeting banner ── */}
         <motion.div {...fadeUp(0)} className="mb-8">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 p-8 md:p-10 text-white shadow-xl text-center">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-500 to-brand-600 p-8 md:p-10 text-white shadow-xl text-center">
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
             <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-white/10 rounded-full blur-xl" />
-            <p className="text-sm font-medium text-indigo-200 mb-1">{greeting.emoji} {greeting.text}</p>
+            <p className="text-sm font-medium text-white/90 mb-1">{greeting.emoji} {greeting.text}</p>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Welcome back to Routed</h1>
             {/* <p className="mt-2 text-indigo-100 text-sm md:text-base max-w-lg mx-auto">Plan trips, find travel partners, and explore the world together.</p> */}
           </div>
@@ -589,7 +616,7 @@ const Dashboard: React.FC = () => {
         <motion.div {...fadeUp(0.1)} className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           {[
             { label: 'Planned Trips', value: '0', icon: '🗺️', color: 'from-blue-50 to-blue-100 border-blue-200' },
-            { label: 'Matches', value: '0', icon: '🤝', color: 'from-emerald-50 to-emerald-100 border-emerald-200' },
+            { label: 'Matches', value: '0', icon: '🤝', color: 'from-brand-50 to-brand-100 border-brand-200' },
             { label: 'Suggestions', value: '3', icon: '💡', color: 'from-amber-50 to-amber-100 border-amber-200' },
             { label: 'Countries', value: '0', icon: '🌍', color: 'from-purple-50 to-purple-100 border-purple-200' },
           ].map((s, i) => (
@@ -617,7 +644,7 @@ const Dashboard: React.FC = () => {
             className="bg-white/70 backdrop-blur-sm rounded-3xl shadow-lg border border-gray-200/60 p-6 hover:shadow-xl transition-shadow min-h-[28rem]"
           >
             <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-              <span className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-lg">🧳</span>
+              <span className="w-9 h-9 rounded-xl bg-brand-100 text-brand-600 flex items-center justify-center text-lg">🧳</span>
               My Trips
             </h3>
 
@@ -628,9 +655,9 @@ const Dashboard: React.FC = () => {
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setTripFormOpen((p) => !p)}
-                  className="flex items-center gap-4 w-full p-4 rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50/60 hover:bg-indigo-100/80 transition-all group text-left"
+                  className="flex items-center gap-4 w-full p-4 rounded-2xl border-2 border-dashed border-brand-300 bg-brand-50/80 hover:bg-brand-100/80 transition-all group text-left"
                 >
-                  <span className="w-11 h-11 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center text-xl font-bold shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all">+</span>
+                  <span className="w-11 h-11 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-white flex items-center justify-center text-xl font-bold shadow-md group-hover:shadow-lg group-hover:scale-110 transition-all">+</span>
                   <div>
                     <p className="font-semibold text-gray-900">Add a New Trip</p>
                     <p className="text-xs text-gray-500">Plan your next adventure</p>
@@ -648,35 +675,37 @@ const Dashboard: React.FC = () => {
                       className="mt-3 bg-white rounded-2xl shadow-lg border border-gray-200 p-6"
                     >
                       <h4 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-md bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">✈️</span>
+                        <span className="w-6 h-6 rounded-md bg-brand-100 text-brand-600 flex items-center justify-center text-xs">✈️</span>
                         Create a New Trip
                       </h4>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-600 mb-1">From Place</label>
-                          <input type="text" name="fromPlace" value={tripForm.fromPlace} onChange={handleTripField} placeholder="e.g. New York"
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition" />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold text-gray-600 mb-1">To Place</label>
-                          <input type="text" name="toPlace" value={tripForm.toPlace} onChange={handleTripField} placeholder="e.g. Paris"
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition" />
-                        </div>
+                        <PlaceAutocomplete
+                          label="From Place"
+                          value={tripForm.fromPlace}
+                          onChange={handleFromPlaceSelect}
+                          placeholder="e.g. New York, Toronto"
+                        />
+                        <PlaceAutocomplete
+                          label="To Place"
+                          value={tripForm.toPlace}
+                          onChange={handleToPlaceSelect}
+                          placeholder="e.g. Paris, Montreal"
+                        />
                         <div>
                           <label className="block text-xs font-semibold text-gray-600 mb-1">Start Date</label>
                           <input type="date" name="startDate" value={tripForm.startDate} onChange={handleTripField}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition" />
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition" />
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-gray-600 mb-1">End Date</label>
                           <input type="date" name="endDate" value={tripForm.endDate} onChange={handleTripField}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition" />
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition" />
                         </div>
                         <div>
                           <label className="block text-xs font-semibold text-gray-600 mb-1">Mode of Travel</label>
                           <select name="travelMode" value={tripForm.travelMode} onChange={handleTripField}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition">
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition">
                             <option value="" disabled>Select mode</option>
                             {TRAVEL_MODES.map((m) => <option key={m} value={m}>{m}</option>)}
                           </select>
@@ -685,22 +714,32 @@ const Dashboard: React.FC = () => {
                           <label className="block text-xs font-semibold text-gray-600 mb-1">Budget</label>
                           <div className="flex gap-2">
                             <select name="currency" value={tripForm.currency} onChange={handleTripField}
-                              className="w-24 px-2 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition">
+                              className="w-24 px-2 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition">
                               {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
                             </select>
                             <input type="number" name="budget" value={tripForm.budget} onChange={handleTripField} placeholder="Amount" min="0"
-                              className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition" />
+                              className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition" />
                           </div>
                         </div>
+                        {tripForm.fromLat != null && tripForm.fromLng != null && tripForm.toLat != null && tripForm.toLng != null && (
+                          <div className="sm:col-span-2">
+                            <label className="block text-xs font-semibold text-gray-600 mb-1">Route Preview</label>
+                            <TripMap
+                              from={{ lat: tripForm.fromLat, lng: tripForm.fromLng, name: tripForm.fromPlace || 'From' }}
+                              to={{ lat: tripForm.toLat, lng: tripForm.toLng, name: tripForm.toPlace || 'To' }}
+                              height="200px"
+                            />
+                          </div>
+                        )}
                         <div className="sm:col-span-2">
                           <label className="block text-xs font-semibold text-gray-600 mb-1">Interests</label>
                           <input type="text" name="interests" value={tripForm.interests} onChange={handleTripField} placeholder="e.g. hiking, food, museums"
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition" />
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition" />
                         </div>
                         <div className="sm:col-span-2">
                           <label className="block text-xs font-semibold text-gray-600 mb-1">Description</label>
                           <textarea name="description" value={tripForm.description} onChange={handleTripField} rows={3} placeholder="Tell others about your trip plans…"
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 transition resize-none" />
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 transition resize-none" />
                         </div>
                       </div>
 
@@ -712,7 +751,7 @@ const Dashboard: React.FC = () => {
                           whileTap={{ scale: 0.97 }}
                           onClick={handleCreateTrip}
                           disabled={creatingTrip}
-                          className="px-5 py-2 text-sm rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                          className="px-5 py-2 text-sm rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 text-white font-semibold shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           {creatingTrip ? 'Creating…' : 'Create Trip'}
                         </motion.button>
@@ -724,29 +763,29 @@ const Dashboard: React.FC = () => {
 
               {/* ── Your Trips ── */}
               <motion.div whileHover={{ scale: 1.01 }}>
-                <Link to="/trips" className="flex items-center gap-4 p-4 rounded-2xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all group">
-                  <span className="w-11 h-11 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-100 transition shadow-sm">
+                <Link to="/trips" className="flex items-center gap-4 p-4 rounded-2xl border border-gray-200 hover:border-brand-300 hover:bg-brand-50/40 transition-all group">
+                  <span className="w-11 h-11 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center group-hover:bg-brand-100 transition shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                   </span>
                   <div>
                     <p className="font-semibold text-gray-900">Your Trips</p>
                     <p className="text-xs text-gray-500">View and manage saved trips</p>
                   </div>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 ml-auto text-gray-300 group-hover:text-indigo-400 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 ml-auto text-gray-300 group-hover:text-brand-500 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                 </Link>
               </motion.div>
 
               {/* ── Matched Trips ── */}
               <motion.div whileHover={{ scale: 1.01 }}>
-                <Link to="/matches" className="flex items-center gap-4 p-4 rounded-2xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all group">
-                  <span className="w-11 h-11 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-100 transition shadow-sm">
+                <Link to="/matches" className="flex items-center gap-4 p-4 rounded-2xl border border-gray-200 hover:border-brand-300 hover:bg-brand-50/40 transition-all group">
+                  <span className="w-11 h-11 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center group-hover:bg-brand-100 transition shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                   </span>
                   <div>
                     <p className="font-semibold text-gray-900">Matched Trips</p>
                     <p className="text-xs text-gray-500">Trips with compatible partners</p>
                   </div>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 ml-auto text-gray-300 group-hover:text-indigo-400 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 ml-auto text-gray-300 group-hover:text-brand-500 transition" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
                 </Link>
               </motion.div>
             </div>
@@ -770,14 +809,14 @@ const Dashboard: React.FC = () => {
                   onClick={() => setRightTab(key)}
                   className={`flex-1 text-xs font-semibold px-2 py-2 rounded-lg transition-all ${
                     rightTab === key
-                      ? 'bg-white text-indigo-700 shadow-sm'
+                      ? 'bg-white text-brand-700 shadow-sm'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   {label}
                   {count > 0 && (
                     <span className={`ml-1 text-[9px] px-1.5 py-0.5 rounded-full font-bold ${
-                      rightTab === key ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-200 text-gray-600'
+                      rightTab === key ? 'bg-brand-100 text-brand-700' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {count}
                     </span>
@@ -791,7 +830,7 @@ const Dashboard: React.FC = () => {
               <>
                 {recLoading ? (
                   <div className="flex-1 flex items-center justify-center">
-                    <div className="w-7 h-7 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                    <div className="w-7 h-7 border-4 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
                   </div>
                 ) : recommendations.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
@@ -815,11 +854,11 @@ const Dashboard: React.FC = () => {
                         <motion.div
                           key={match.id}
                           whileHover={{ scale: 1.01, x: 4 }}
-                          className="p-4 rounded-2xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all group"
+                          className="p-4 rounded-2xl border border-gray-200 hover:border-brand-300 hover:bg-brand-50/40 transition-all group"
                         >
                           {/* Row 1: User + score + actions */}
                           <div className="flex items-center gap-3">
-                            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-sm text-white font-bold shadow-sm shrink-0">
+                            <span className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-500 flex items-center justify-center text-sm text-white font-bold shadow-sm shrink-0">
                               {match.otherUser.username.charAt(0).toUpperCase()}
                             </span>
                             <div className="flex-1 min-w-0">
@@ -833,7 +872,7 @@ const Dashboard: React.FC = () => {
                               <button
                                 disabled={isActing}
                                 onClick={(e) => { e.stopPropagation(); handleRecAccept(match) }}
-                                className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200 transition disabled:opacity-50"
+                                className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-brand-100 text-brand-700 border border-brand-200 hover:bg-brand-200 transition disabled:opacity-50"
                                 title="Accept — I'm interested in traveling together"
                               >{isActing ? '…' : '✓ Accept'}</button>
                               <button
@@ -858,14 +897,14 @@ const Dashboard: React.FC = () => {
                               <div className="flex flex-wrap gap-1 mt-1">
                                 <span className="text-[10px] text-gray-400 mr-1">Shared:</span>
                                 {sharedInterests.map((tag) => (
-                                  <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-medium">
+                                  <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded-full bg-brand-50 text-brand-600 font-medium">
                                     {tag}
                                   </span>
                                 ))}
                               </div>
                             )}
                             {budgetDiff != null && budgetDiff === 0 && (
-                              <p className="text-[10px] text-emerald-600 font-medium">💰 Same budget!</p>
+                              <p className="text-[10px] text-brand-600 font-medium">💰 Same budget!</p>
                             )}
                             {budgetDiff != null && budgetDiff > 0 && (
                               <p className="text-[10px] text-gray-400">💰 Budget difference: ${budgetDiff.toFixed(0)}</p>
@@ -916,7 +955,7 @@ const Dashboard: React.FC = () => {
                             <button
                               disabled={isActing}
                               onClick={(e) => { e.stopPropagation(); handleAcceptInterest(record) }}
-                              className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200 hover:bg-emerald-200 transition disabled:opacity-50"
+                              className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-brand-100 text-brand-700 border border-brand-200 hover:bg-brand-200 transition disabled:opacity-50"
                               title="Approve — creates a match"
                             >✓ Approve</button>
                             <button
@@ -946,7 +985,7 @@ const Dashboard: React.FC = () => {
                     </p>
                     <Link
                       to="/explore"
-                      className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg transition-all"
+                      className="mt-4 inline-flex items-center gap-2 bg-gradient-to-r from-brand-500 to-brand-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm shadow-md hover:shadow-lg transition-all"
                     >
                       🔍 Explore Trips
                     </Link>
@@ -956,7 +995,7 @@ const Dashboard: React.FC = () => {
                     {interestsGiven.map((record) => {
                       const statusStyles = {
                         pending: { label: '⏳ Pending', bg: 'bg-amber-50 text-amber-700 border-amber-200' },
-                        accepted: { label: '✅ Accepted', bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                        accepted: { label: '✅ Accepted', bg: 'bg-brand-50 text-brand-700 border-brand-200' },
                         declined: { label: '❌ Declined', bg: 'bg-red-50 text-red-600 border-red-200' },
                       }
                       const st = statusStyles[record.status]
@@ -964,9 +1003,9 @@ const Dashboard: React.FC = () => {
                         <motion.div
                           key={record.id}
                           whileHover={{ scale: 1.01, x: 4 }}
-                          className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50/40 transition-all"
+                          className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 hover:border-brand-300 hover:bg-brand-50/40 transition-all"
                         >
-                          <span className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-sm text-white font-bold shadow-sm shrink-0">
+                          <span className="w-10 h-10 rounded-full bg-gradient-to-br from-brand-400 to-brand-500 flex items-center justify-center text-sm text-white font-bold shadow-sm shrink-0">
                             {record.toUsername.charAt(0).toUpperCase()}
                           </span>
                           <div className="flex-1 min-w-0">
@@ -1012,13 +1051,13 @@ const Dashboard: React.FC = () => {
                           animate={{ opacity: 1, x: 0 }}
                           className={`flex items-start gap-3 p-4 rounded-2xl border transition-all ${
                             isSuccess
-                              ? 'border-emerald-200 bg-emerald-50/60'
+                              ? 'border-brand-200 bg-brand-50/60'
                               : 'border-orange-200 bg-orange-50/60'
                           }`}
                         >
                           <span className={`w-10 h-10 rounded-full flex items-center justify-center text-sm text-white font-bold shadow-sm shrink-0 ${
                             isSuccess
-                              ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
+                              ? 'bg-gradient-to-br from-brand-400 to-brand-600'
                               : 'bg-gradient-to-br from-orange-300 to-red-400'
                           }`}>
                             {msg.otherUsername.charAt(0).toUpperCase()}
@@ -1026,9 +1065,9 @@ const Dashboard: React.FC = () => {
                           <div className="flex-1 min-w-0">
                             {isSuccess ? (
                               <>
-                                <p className="font-semibold text-emerald-800 text-sm">🎉 Trip Matched Successfully!</p>
+                                <p className="font-semibold text-brand-800 text-sm">🎉 Trip Matched Successfully!</p>
                                 <p className="text-[11px] text-gray-600 mt-0.5">
-                                  You and <span className="font-semibold text-emerald-700">@{msg.otherUsername}</span> both accepted the recommendation!
+                                  You and <span className="font-semibold text-brand-700">@{msg.otherUsername}</span> both accepted the recommendation!
                                 </p>
                                 <p className="text-[11px] text-gray-500 mt-0.5">
                                   📍 {msg.locationName} · {msg.myTripLabel}
@@ -1072,13 +1111,13 @@ const Dashboard: React.FC = () => {
                           animate={{ opacity: 1, x: 0 }}
                           className={`flex items-start gap-3 p-4 rounded-2xl border transition-all ${
                             isAccepted
-                              ? 'border-emerald-200 bg-emerald-50/60'
+                              ? 'border-brand-200 bg-brand-50/60'
                               : 'border-red-100 bg-red-50/50'
                           }`}
                         >
                           <span className={`w-10 h-10 rounded-full flex items-center justify-center text-sm text-white font-bold shadow-sm shrink-0 ${
                             isAccepted
-                              ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
+                              ? 'bg-gradient-to-br from-brand-400 to-brand-600'
                               : 'bg-gradient-to-br from-red-300 to-rose-400'
                           }`}>
                             {otherName.charAt(0).toUpperCase()}
@@ -1086,9 +1125,9 @@ const Dashboard: React.FC = () => {
                           <div className="flex-1 min-w-0">
                             {isAccepted ? (
                               <>
-                                <p className="font-semibold text-emerald-800 text-sm">🎉 Interest Accepted!</p>
+                                <p className="font-semibold text-brand-800 text-sm">🎉 Interest Accepted!</p>
                                 <p className="text-[11px] text-gray-600 mt-0.5">
-                                  You've successfully matched with <span className="font-semibold text-emerald-700">@{otherName}</span>!
+                                  You've successfully matched with <span className="font-semibold text-brand-700">@{otherName}</span>!
                                 </p>
                                 <p className="text-[11px] text-gray-500 mt-0.5">
                                   Trip: <span className="font-medium">{record.tripLabel}</span>

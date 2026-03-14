@@ -1,91 +1,56 @@
-.landing {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  color: #0b1220;
-  background: #ffffff;
+/* Royal blue design system — all.inn-style landing */
+
+.landing-page {
+  font-family: 'Inter', 'Poppins', ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Remove outer margins/padding for full-bleed layout */
-.landing, .hero, .sections, .site-head, .site-footer {
-  margin: 0;
-  padding: 0;
+/* Logo glow on blue hero background */
+.landing-logo-glow {
+  filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.7))
+    drop-shadow(0 0 32px rgba(255, 255, 255, 0.4))
+    drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
 }
 
-/* Override MUI Container default horizontal padding to make edges flush */
-.site-head > .MuiContainer-root,
-.hero > .MuiContainer-root,
-.hero-inner {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
+/* Hero decorative shapes (subtle circles) */
+.hero-shapes::before,
+.hero-shapes::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+.hero-shapes::before {
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  right: -150px;
+}
+.hero-shapes::after {
+  width: 400px;
+  height: 400px;
+  bottom: -100px;
+  left: -100px;
 }
 
-.hero {
-  padding: 0;
-  text-align: left;
+/* Floating cards animation */
+.landing-float {
+  animation: float 6s ease-in-out infinite;
 }
-.hero-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 16px;
-  width: 100%;
-}
-.title { font-size: 2rem }
-.subtitle { color: #334155 }
-.cta-row { display: flex; gap: 0.75rem; justify-content: center; margin-top: 1rem }
-.btn { padding: 0.5rem 1rem; text-decoration: none; font-weight: 700 }
-.btn.primary { background: #2563eb; color: white }
-.btn.ghost { background: transparent; color: #2563eb }
-
-.sections { padding: 12px 16px; max-width: 1200px; margin: 0 auto }
-.feature-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 0.75rem; margin-bottom: 1.25rem }
-.feature { padding: 1rem }
-.feature h3 { color: #0f172a; margin-top: 0 }
-.feature p { color: #475569 }
-
-.how-it-works { text-align: left; margin-bottom: 2rem }
-.how-it-works ol { padding-left: 1.2rem }
-
-.signup { text-align: center; padding: 2rem }
-
-.site-footer { text-align: center; padding: 2rem 1rem; color: #64748b }
-
-/* header nav */
-.site-head { width:100%; display:block; border-bottom: none }
-.site-head > .MuiContainer-root { padding: 0 12px }
-.site-brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:inherit }
-.nav-actions { display:flex; gap:10px }
-
-@media (max-width: 640px) {
-  .title { font-size: 1.6rem }
-  .cta-row { flex-direction: column }
-  .site-head { padding: 0.5rem }
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
 }
 
-/* Hero specifics */
-.hero-content { padding-right: 0 }
-.hero-illustration svg { width: 100%; height: auto }
-.hero-stats { display:flex; gap:0.5rem; margin-top:0.6rem }
-.hero-stats .stat { padding: 6px 10px }
-.hero-stats .stat strong { font-size:0.95rem }
-
-@media (max-width: 900px) {
-  .hero-inner { flex-direction:column }
-  .hero-illustration { order: -1; margin-bottom: 1.25rem }
-  .hero-content { max-width: 100% }
-  .hero-stats { justify-content: space-between }
+.landing-card-floating {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.landing-card-floating:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.25);
 }
 
-/* subtle fade-in animations */
-.hero, .feature, .site-head, .cta-row { opacity: 0; transform: translateY(6px); animation: fadeUp 600ms ease forwards }
-.hero { animation-delay: 40ms }
-.site-head { animation-delay: 0ms }
-.feature { animation-delay: 140ms }
-.cta-row { animation-delay: 80ms }
-
-@keyframes fadeUp {
-  to { opacity: 1; transform: translateY(0) }
+/* Card hover lift (used by landing-card) */
+.landing-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
-
-/* Tailwind-like cards (tw-card) */
-.tw-card { background: white; padding: 0.85rem }
-.tw-card-header { display:flex; align-items:center; gap:0.6rem; margin-bottom:0.4rem }
-.tw-card-body { color: #475569; font-size:0.95rem }

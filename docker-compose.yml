@@ -16,28 +16,6 @@ services:
       timeout: 5s
       retries: 5
 
-  postgres:
-    image: postgres:15-alpine
-    container_name: routed-postgres
-    env_file:
-      - env/.env
-    environment:
-      - POSTGRES_USER=routed_user
-      - POSTGRES_PASSWORD=routed_password
-      - POSTGRES_DB=routed
-    ports:
-      - "5434:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - routed-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U routed_user -d routed"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   neo4j:
     image: neo4j:5-community
     container_name: routed-neo4j
@@ -74,8 +52,6 @@ services:
       - "8000:8000"
     command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
-      postgres:
-        condition: service_healthy
       neo4j:
         condition: service_healthy
       redis:
@@ -98,8 +74,6 @@ services:
       - PYTHONPATH=/app/src
     command: celery -A backend.workers.celery_app worker -l info
     depends_on:
-      postgres:
-        condition: service_healthy
       neo4j:
         condition: service_healthy
       redis:
@@ -134,5 +108,4 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
   neo4j_data:

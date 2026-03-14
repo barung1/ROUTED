@@ -203,7 +203,7 @@ const Profile: React.FC = () => {
 
     try {
       // Send empty/null profile picture to backend
-      const response = await api.put('/users/me', { profilePicture: null })
+      await api.put('/users/me', { profilePicture: null })
       
       // Update local state
       setProfile((prev) => ({ ...prev, profilePicture: '' }))
@@ -408,7 +408,7 @@ const Profile: React.FC = () => {
 
   if (loadingProfile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-brand-50/50 flex items-center justify-center">
         <div className="text-gray-600 text-lg font-medium">Loading profile...</div>
       </div>
     )
@@ -416,7 +416,7 @@ const Profile: React.FC = () => {
 
   /* ── render ── */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-brand-50/50">
       {requestError && (
         <div className="max-w-4xl mx-auto px-4 md:px-8 pt-4">
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{requestError}</div>
@@ -439,10 +439,10 @@ const Profile: React.FC = () => {
               whileTap={{ scale: 0.9 }}
               transition={{ type: 'spring', stiffness: 300, damping: 15 }}
               onClick={() => setSettingsOpen((p) => !p)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-indigo-300 ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-brand-300 ${
                 settingsOpen
-                  ? 'bg-white text-indigo-600 ring-2 ring-indigo-300'
-                  : 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white'
+                  ? 'bg-white text-brand-600 ring-2 ring-brand-300'
+                  : 'bg-gradient-to-br from-brand-500 to-brand-600 text-white'
               }`}
               aria-label="Settings"
               title="Settings"
@@ -466,7 +466,7 @@ const Profile: React.FC = () => {
                   <Link
                     to="/dashboard"
                     onClick={() => setSettingsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition rounded-lg mx-1"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     Dashboard
@@ -474,7 +474,7 @@ const Profile: React.FC = () => {
                   <Link
                     to="/trips"
                     onClick={() => setSettingsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition rounded-lg mx-1"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
                     My Trips
@@ -482,7 +482,7 @@ const Profile: React.FC = () => {
                   <Link
                     to="/explore"
                     onClick={() => setSettingsOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition rounded-lg mx-1"
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition rounded-lg mx-1"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
                     Explore
@@ -504,7 +504,7 @@ const Profile: React.FC = () => {
 
       {/* ── Back to Dashboard ── */}
       <div className="max-w-4xl mx-auto px-4 md:px-8 pt-4">
-        <Link to="/dashboard" className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-800 text-sm font-medium transition">
+        <Link to="/dashboard" className="inline-flex items-center gap-2 text-brand-600 hover:text-brand-800 text-sm font-medium transition">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
           Back to Dashboard
         </Link>
@@ -517,11 +517,11 @@ const Profile: React.FC = () => {
         <motion.div {...fadeUp(0)} className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
           
           {/* Header Banner */}
-          <div className="h-32 bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 relative">
+          <div className="h-32 bg-gradient-to-r from-brand-500 to-brand-600 relative">
             <div className="absolute -bottom-16 left-8">
               <div className="relative group">
                 {/* Profile Picture */}
-                <div className="w-32 h-32 rounded-full border-4 border-white bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg flex items-center justify-center overflow-hidden relative">
+                <div className="w-32 h-32 rounded-full border-4 border-white bg-gradient-to-br from-brand-500 to-brand-600 shadow-lg flex items-center justify-center overflow-hidden relative">
                   {profile.profilePicture ? (
                     <img src={profile.profilePicture} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -541,7 +541,7 @@ const Profile: React.FC = () => {
                 {/* Edit Icon on Profile Picture */}
                 <button
                   onClick={handleProfilePictureClick}
-                  className="absolute bottom-1 right-1 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-indigo-600 hover:bg-indigo-50 transition-all hover:scale-110 active:scale-95 group-hover:ring-2 group-hover:ring-indigo-300"
+                  className="absolute bottom-1 right-1 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center text-brand-600 hover:bg-brand-50 transition-all hover:scale-110 active:scale-95 group-hover:ring-2 group-hover:ring-brand-300"
                   aria-label="Edit profile picture"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -555,7 +555,7 @@ const Profile: React.FC = () => {
                   <div className="absolute bottom-12 right-0 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50 min-w-max">
                     <button
                       onClick={handleGallerySelect}
-                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition text-left"
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition text-left"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -565,7 +565,7 @@ const Profile: React.FC = () => {
                     </button>
                     <button
                       onClick={handleCameraCapture}
-                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition text-left"
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-gray-700 hover:bg-brand-50 hover:text-brand-700 transition text-left"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="23 7 16 12 23 17 23 7"/>
@@ -615,11 +615,11 @@ const Profile: React.FC = () => {
             <div className="absolute inset-y-0 right-8 flex items-center gap-8">
               <div className="text-white text-center">
                 <div className="text-3xl font-bold">{profile.tripsCount}</div>
-                <div className="text-sm text-indigo-100">Trips</div>
+                <div className="text-sm text-brand-100">Trips</div>
               </div>
               <div className="h-12 w-px bg-white/30"></div>
               <div className="text-white text-center">
-                <div className="text-xs text-indigo-100">Member Since</div>
+                <div className="text-xs text-brand-100">Member Since</div>
                 <div className="text-sm font-semibold">{profile.memberSince.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
               </div>
             </div>
@@ -638,13 +638,13 @@ const Profile: React.FC = () => {
                       type="text"
                       value={profile.username}
                       onChange={(e) => handleFieldChange('username', e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       autoFocus
                     />
                     <button
                       onClick={() => handleSave('username')}
                       disabled={savingField === 'username'}
-                      className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
+                      className="px-4 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-all font-medium"
                     >
                       {savingField === 'username' ? 'Saving...' : 'Save'}
                     </button>
@@ -662,7 +662,7 @@ const Profile: React.FC = () => {
                     </div>
                     <button
                       onClick={() => setIsEditingUsername(true)}
-                      className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 transition-all flex items-center justify-center"
+                      className="w-10 h-10 bg-brand-100 text-brand-600 rounded-xl hover:bg-brand-200 transition-all flex items-center justify-center"
                       aria-label="Edit username"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -685,13 +685,13 @@ const Profile: React.FC = () => {
                       type="email"
                       value={profile.email}
                       onChange={(e) => handleFieldChange('email', e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       autoFocus
                     />
                     <button
                       onClick={() => handleSave('email')}
                       disabled={savingField === 'email'}
-                      className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
+                      className="px-4 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-all font-medium"
                     >
                       {savingField === 'email' ? 'Saving...' : 'Save'}
                     </button>
@@ -709,7 +709,7 @@ const Profile: React.FC = () => {
                     </div>
                     <button
                       onClick={() => setIsEditingEmail(true)}
-                      className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 transition-all flex items-center justify-center"
+                      className="w-10 h-10 bg-brand-100 text-brand-600 rounded-xl hover:bg-brand-200 transition-all flex items-center justify-center"
                       aria-label="Edit email"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -733,13 +733,13 @@ const Profile: React.FC = () => {
                       value={profile.location}
                       onChange={(e) => handleFieldChange('location', e.target.value)}
                       placeholder="Enter your location"
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       autoFocus
                     />
                     <button
                       onClick={() => handleSave('location')}
                       disabled={savingField === 'location'}
-                      className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
+                      className="px-4 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-all font-medium"
                     >
                       {savingField === 'location' ? 'Saving...' : 'Save'}
                     </button>
@@ -757,7 +757,7 @@ const Profile: React.FC = () => {
                     </div>
                     <button
                       onClick={() => setIsEditingLocation(true)}
-                      className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 transition-all flex items-center justify-center"
+                      className="w-10 h-10 bg-brand-100 text-brand-600 rounded-xl hover:bg-brand-200 transition-all flex items-center justify-center"
                       aria-label="Edit location"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -780,13 +780,13 @@ const Profile: React.FC = () => {
                       type="date"
                       value={profile.dateOfBirth}
                       onChange={(e) => handleFieldChange('dateOfBirth', e.target.value)}
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       autoFocus
                     />
                     <button
                       onClick={() => handleSave('dateOfBirth')}
                       disabled={savingField === 'dateOfBirth'}
-                      className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
+                      className="px-4 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-all font-medium"
                     >
                       {savingField === 'dateOfBirth' ? 'Saving...' : 'Save'}
                     </button>
@@ -810,7 +810,7 @@ const Profile: React.FC = () => {
                     </div>
                     <button
                       onClick={() => setIsEditingDateOfBirth(true)}
-                      className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 transition-all flex items-center justify-center"
+                      className="w-10 h-10 bg-brand-100 text-brand-600 rounded-xl hover:bg-brand-200 transition-all flex items-center justify-center"
                       aria-label="Edit date of birth"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -835,12 +835,12 @@ const Profile: React.FC = () => {
                           <p className="text-sm text-gray-500">No interests selected yet.</p>
                         ) : (
                           profile.interests.map((interest) => (
-                            <span key={interest} className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-800 text-sm font-semibold px-3 py-1.5 rounded-full">
+                            <span key={interest} className="inline-flex items-center gap-2 bg-brand-100 text-brand-800 text-sm font-semibold px-3 py-1.5 rounded-full">
                               {interest}
                               <button
                                 type="button"
                                 onClick={() => removeInterest(interest)}
-                                className="text-indigo-600 hover:text-indigo-900"
+                                className="text-brand-600 hover:text-brand-900"
                                 aria-label={`Remove ${interest}`}
                               >
                                 ×
@@ -868,13 +868,13 @@ const Profile: React.FC = () => {
                               }
                             }}
                             placeholder="Search interests or type your own"
-                            className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                            className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                             autoFocus
                           />
                           <button
                             type="button"
                             onClick={() => addInterest(interestSearch)}
-                            className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
+                            className="px-4 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-all font-medium"
                           >
                             Add
                           </button>
@@ -887,7 +887,7 @@ const Profile: React.FC = () => {
                                 key={option.label}
                                 type="button"
                                 onClick={() => addInterest(option.label)}
-                                className="w-full text-left px-4 py-3 hover:bg-indigo-50 border-b border-gray-100 last:border-b-0"
+                                className="w-full text-left px-4 py-3 hover:bg-brand-50 border-b border-gray-100 last:border-b-0"
                               >
                                 <p className="text-sm font-semibold text-gray-800">{option.label}</p>
                                 <p className="text-xs text-gray-500">{option.description}</p>
@@ -903,7 +903,7 @@ const Profile: React.FC = () => {
                       <button
                         onClick={() => handleSave('interests')}
                         disabled={savingField === 'interests'}
-                        className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
+                        className="px-4 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-all font-medium"
                       >
                         {savingField === 'interests' ? 'Saving...' : 'Save'}
                       </button>
@@ -921,7 +921,7 @@ const Profile: React.FC = () => {
                       {profile.interests.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {profile.interests.map((interest) => (
-                            <span key={interest} className="bg-indigo-100 text-indigo-800 text-sm font-semibold px-3 py-1.5 rounded-full">
+                            <span key={interest} className="bg-brand-100 text-brand-800 text-sm font-semibold px-3 py-1.5 rounded-full">
                               {interest}
                             </span>
                           ))}
@@ -932,7 +932,7 @@ const Profile: React.FC = () => {
                     </div>
                     <button
                       onClick={() => setIsEditingInterests(true)}
-                      className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 transition-all flex items-center justify-center shrink-0"
+                      className="w-10 h-10 bg-brand-100 text-brand-600 rounded-xl hover:bg-brand-200 transition-all flex items-center justify-center shrink-0"
                       aria-label="Edit interests"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -956,14 +956,14 @@ const Profile: React.FC = () => {
                       onChange={(e) => handleFieldChange('bio', e.target.value)}
                       rows={4}
                       placeholder="Tell us about yourself..."
-                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
                       autoFocus
                     />
                     <div className="flex flex-col gap-2">
                       <button
                         onClick={() => handleSave('bio')}
                         disabled={savingField === 'bio'}
-                        className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-medium"
+                        className="px-4 py-2.5 bg-brand-600 text-white rounded-xl hover:bg-brand-700 transition-all font-medium"
                       >
                         {savingField === 'bio' ? 'Saving...' : 'Save'}
                       </button>
@@ -982,7 +982,7 @@ const Profile: React.FC = () => {
                     </div>
                     <button
                       onClick={() => setIsEditingBio(true)}
-                      className="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-xl hover:bg-indigo-200 transition-all flex items-center justify-center shrink-0"
+                      className="w-10 h-10 bg-brand-100 text-brand-600 rounded-xl hover:bg-brand-200 transition-all flex items-center justify-center shrink-0"
                       aria-label="Edit bio"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

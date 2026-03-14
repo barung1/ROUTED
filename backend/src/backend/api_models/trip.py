@@ -11,6 +11,10 @@ class TripCreateModel(BaseModel):
 	status: TripStatus | None = TripStatus.PLANNED
 	fromPlace: str | None = None
 	toPlace: str | None = None
+	fromLat: float | None = None
+	fromLng: float | None = None
+	toLat: float | None = None
+	toLng: float | None = None
 	modeOfTravel: TravelMode | None = None
 	budget: float | None = None
 	interests: list[str] = []
@@ -24,6 +28,10 @@ class TripUpdateModel(BaseModel):
 	status: TripStatus | None = None
 	fromPlace: str | None = None
 	toPlace: str | None = None
+	fromLat: float | None = None
+	fromLng: float | None = None
+	toLat: float | None = None
+	toLng: float | None = None
 	modeOfTravel: TravelMode | None = None
 	budget: float | None = None
 	interests: list[str] | None = None
@@ -40,6 +48,10 @@ class TripPublicModel(BaseModel):
 	status: TripStatus
 	fromPlace: str | None = None
 	toPlace: str | None = None
+	fromLat: float | None = None
+	fromLng: float | None = None
+	toLat: float | None = None
+	toLng: float | None = None
 	modeOfTravel: TravelMode | None = None
 	budget: float | None = None
 	interests: list[str] = []

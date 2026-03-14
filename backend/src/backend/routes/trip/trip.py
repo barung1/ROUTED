@@ -9,6 +9,8 @@ from backend.api_models.trip import TripCreateModel, TripPublicModel, TripUpdate
 from backend.auth.jwt import get_current_user_id, security, verify_access_token
 from backend.config.db import get_db_session
 from backend.models.location import Location
+from geoalchemy2 import WKTElement
+
 from backend.models.trip import Trip, TripStatus
 from backend.models.user import User
 from backend.services.match_service import MatchService
@@ -43,6 +45,10 @@ def _validate_date_range(start_date, end_date) -> None:
 
 
 def _to_public(trip: Trip) -> TripPublicModel:
+	from_lat_f = float(trip.from_lat) if trip.from_lat is not None else None
+	from_lng_f = float(trip.from_lng) if trip.from_lng is not None else None
+	to_lat_f = float(trip.to_lat) if trip.to_lat is not None else None
+	to_lng_f = float(trip.to_lng) if trip.to_lng is not None else None
 	return TripPublicModel(
 		id=trip.id,
 		userId=trip.user.id if trip.user else None,
@@ -53,6 +59,10 @@ def _to_public(trip: Trip) -> TripPublicModel:
 		status=trip.status,
 		fromPlace=trip.from_place,
 		toPlace=trip.to_place,
+		fromLat=from_lat_f,
+		fromLng=from_lng_f,
+		toLat=to_lat_f,
+		toLng=to_lng_f,
 		modeOfTravel=trip.mode_of_travel,
 		budget=trip.budget,
 		interests=trip.interests or [],
@@ -139,6 +149,23 @@ def _resolve_location_from_place(
 	return None
 
 
+def _get_or_create_location_from_coords(
+	display_name: str,
+	lat: float,
+	lng: float,
+	db: Session,
+) -> UUID:
+	"""Create a Location from autocomplete selection if none exists. Uses destination name as location name."""
+	position_wkt = f"POINT({lng} {lat})"
+	position = WKTElement(position_wkt, srid=4326)
+	# Use short name: first part before comma (e.g. "Toronto, Ontario, Canada" -> "Toronto")
+	name = display_name.split(",")[0].strip() or display_name[:80]
+	loc = Location(name=name, position=position)
+	db.add(loc)
+	db.flush()
+	return loc.id
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=TripPublicModel)
 @limiter.limit("100/minute")
 def create_trip(
@@ -157,15 +184,20 @@ def create_trip(
 	# Resolve the location for this trip
 	location_id = trip.locationId
 	if location_id is None:
-		# Try to infer location from toPlace or fromPlace using fuzzy name matching
-		location_id = _resolve_location_from_place(trip.toPlace, trip.fromPlace, db)
-		if location_id is None:
-			raise HTTPException(
-				status_code=status.HTTP_400_BAD_REQUEST,
-				detail="Could not determine a location for this trip. "
-				       "Please provide a locationId or ensure the destination "
-				       "matches a known location.",
+		# If we have destination coordinates from autocomplete, create Location on the fly
+		if trip.toPlace and trip.toLat is not None and trip.toLng is not None:
+			location_id = _get_or_create_location_from_coords(
+				trip.toPlace, float(trip.toLat), float(trip.toLng), db
 			)
+		else:
+			# Try to infer location from toPlace or fromPlace using fuzzy name matching
+			location_id = _resolve_location_from_place(trip.toPlace, trip.fromPlace, db)
+			if location_id is None:
+				raise HTTPException(
+					status_code=status.HTTP_400_BAD_REQUEST,
+					detail="Could not determine a location for this trip. "
+					       "Please select a destination from the autocomplete suggestions.",
+				)
 	else:
 		location = db.execute(select(Location).where(Location.id == location_id)).scalars().first()
 		if not location:
@@ -180,6 +212,10 @@ def create_trip(
 		user_name=user.username,
 		from_place=trip.fromPlace,
 		to_place=trip.toPlace,
+		from_lat=trip.fromLat,
+		from_lng=trip.fromLng,
+		to_lat=trip.toLat,
+		to_lng=trip.toLng,
 		mode_of_travel=trip.modeOfTravel,
 		budget=trip.budget,
 		interests=trip.interests,
@@ -316,6 +352,14 @@ def update_trip(
 		trip.from_place = update.fromPlace
 	if update.toPlace is not None:
 		trip.to_place = update.toPlace
+	if update.fromLat is not None:
+		trip.from_lat = update.fromLat
+	if update.fromLng is not None:
+		trip.from_lng = update.fromLng
+	if update.toLat is not None:
+		trip.to_lat = update.toLat
+	if update.toLng is not None:
+		trip.to_lng = update.toLng
 	if update.modeOfTravel is not None:
 		trip.mode_of_travel = update.modeOfTravel
 	if update.budget is not None:
